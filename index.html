@@ -1,0 +1,2592 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声场与信号速查 · Acoustics Workbench</title>
+<style>
+  :root{
+    --bg:#11181f;--panel:#1a232c;--panel2:#151d24;--ink:#e8edf1;--muted:#8b9aa8;--line:#2a3742;
+    --accent:#2ee6a6;--accent-soft:#143028;--warm:#f5a623;--red:#ff6b66;--blue:#5a92f0;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);--radius:14px;
+  }
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  /* 两栏布局 */
+  .app{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:248px;flex-shrink:0;background:var(--panel2);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+  .content{flex:1;overflow-y:auto;min-width:0}
+  .wrap{max-width:1000px;margin:0 auto;padding:8px 26px 80px}
+
+  /* 侧边栏 logo */
+  .logo{display:flex;align-items:center;gap:11px;padding:18px 16px 16px}
+  .mark{width:34px;height:34px;border-radius:10px;flex:none;background:linear-gradient(135deg,var(--accent),#1fb98a);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(46,230,166,.25)}
+  .mark svg{width:20px;height:20px}
+  .logo h1{font-size:15px;margin:0;letter-spacing:.3px}
+  .logo .sub{font-size:11px;color:var(--muted);margin-top:-1px}
+
+  /* 侧边栏导航(竖排) */
+  .modnav{display:flex;flex-direction:column;gap:3px;padding:6px 10px;flex:1;overflow-y:auto}
+  .modnav button{border:none;background:transparent;padding:10px 13px;border-radius:9px;font-size:13.5px;
+    cursor:pointer;color:var(--muted);font-family:inherit;transition:.15s;font-weight:600;text-align:left;
+    display:flex;align-items:center;gap:11px;width:100%}
+  .modnav button .nav-ic{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+  .modnav button.on{background:var(--accent);color:#fff;box-shadow:0 6px 14px rgba(15,181,142,.28)}
+  .modnav button:hover:not(.on){background:#1f2a33;color:var(--ink)}
+
+  /* 侧边栏底部报告信息 */
+  .side-foot{border-top:1px solid var(--line);padding:14px 16px;font-size:12px;color:var(--muted)}
+  .side-foot summary{cursor:pointer;user-select:none;font-weight:600;margin-bottom:8px}
+  .side-foot input{width:100%;padding:7px 10px;border:1px solid var(--line);background:#11181f;color:var(--ink);
+    border-radius:8px;font-size:12.5px;font-family:inherit;margin-top:6px}
+  .side-foot input::placeholder{color:#5a6b78}
+  .side-foot input:focus{outline:none;border-color:var(--accent)}
+
+  .module{display:none}.module.active{display:block}
+  .modhead{padding:26px 0 4px}
+  .modhead h2{font-size:21px;margin:0}
+  .modhead p{font-size:13px;color:var(--muted);margin:4px 0 0}
+
+  /* 子标签 */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 2px}
+  .tab{border:1px solid var(--line);background:var(--panel);padding:9px 15px;border-radius:999px;font-size:13.5px;
+    cursor:pointer;color:var(--muted);transition:.18s;white-space:nowrap}
+  .tab:hover{border-color:var(--accent);color:var(--ink)}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#04130e}
+  .panel{display:none;animation:fade .25s ease}.panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;box-shadow:var(--shadow);margin-top:16px}
+  .card h3{font-size:16px;margin:0 0 4px}
+  .card .desc{font-size:13px;color:var(--muted);margin:0 0 16px}
+  .step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;
+    background:var(--accent);color:#fff;font-size:12px;font-weight:700;margin-right:8px;vertical-align:1px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  input[type=number],input[type=text],select{width:100%;padding:10px 12px;border:1px solid var(--line);
+    border-radius:10px;font-size:15px;color:var(--ink);background:#11181f;transition:.15s;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+  .field{margin-bottom:14px}
+  .row{display:flex;gap:10px;align-items:flex-end}.row .field{flex:1;margin-bottom:0}
+
+  .btn{background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:14px;
+    font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+  .btn:hover{filter:brightness(1.05);box-shadow:0 6px 14px rgba(15,181,142,.3)}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  .btn.small{padding:7px 12px;font-size:13px}.btn.tiny{padding:6px 11px;font-size:12.5px}
+
+  .result{margin-top:16px;background:var(--accent-soft);border:1px solid #1e4b3d;border-radius:12px;padding:16px 18px}
+  .result .big{font-size:30px;font-weight:700;color:var(--accent);letter-spacing:.5px}
+  .result .lbl{font-size:12.5px;color:var(--muted);margin-bottom:2px}
+  .result .extra{font-size:13px;color:#5fbf9e;margin-top:6px}
+  .results{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:4px}
+  .rcell{background:var(--accent-soft);border:1px solid #1e4b3d;border-radius:12px;padding:14px 16px}
+  .rcell .lbl{font-size:12px;color:var(--muted)}
+  .rcell .big{font-size:28px;font-weight:700;color:var(--accent);line-height:1.15;margin-top:2px}
+  .rcell .u{font-size:13px;font-weight:600;color:#6fae9c}
+  .rcell.b2{background:#16242e;border-color:#2a4055}.rcell.b2 .big{color:#7eb0f0}
+  .rcell.spec{background:#16242e;border-color:#2a4055}.rcell.spec .big{color:#7eb0f0}
+
+  .levellist{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+  .levelrow{display:flex;gap:8px;align-items:center}.levelrow input{flex:1}
+  .levelrow .del{width:34px;height:38px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:9px;
+    cursor:pointer;color:var(--muted);font-size:16px;line-height:1}
+  .levelrow .del:hover{border-color:var(--warm);color:var(--warm)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.3px;text-transform:uppercase}
+  td.val{font-variant-numeric:tabular-nums;font-weight:600}
+
+  .seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .seg button{border:1px solid var(--line);background:var(--panel);padding:7px 13px;border-radius:8px;font-size:13px;
+    cursor:pointer;color:var(--muted);font-family:inherit;transition:.15s}
+  .seg button.on{background:var(--accent);color:#04130e;border-color:var(--accent)}
+  .seg button:hover:not(.on){border-color:var(--accent);color:var(--ink)}
+
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .hint code{background:#1f2a33;padding:1px 6px;border-radius:5px;font-size:11.5px}
+  .note{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;line-height:1.45}
+  .swap{cursor:pointer;color:var(--accent);font-size:13px;background:none;border:none;font-weight:600;padding:4px}
+  .warnbox{border-radius:10px;padding:10px 14px;font-size:12.5px;margin-top:12px;display:none}
+  .warnbox.show{display:block}
+  .notebox{background:#16242e;border:1px solid #2a4055;color:#7eb0f0;border-radius:10px;padding:11px 14px;
+    font-size:12.5px;margin-top:4px;line-height:1.6}
+
+  /* 表格输入（隔声） */
+  .tablewrap{overflow-x:auto;margin-top:4px;border:1px solid var(--line);border-radius:11px}
+  table.grid{border-collapse:collapse;font-size:13px;min-width:100%}
+  table.grid th,table.grid td{padding:6px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);
+    text-align:center;white-space:nowrap}
+  table.grid th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:11.5px;position:sticky;top:0}
+  table.grid th:first-child,table.grid td:first-child{text-align:left;background:var(--panel2);font-weight:600;
+    position:sticky;left:0;z-index:1}
+  table.grid td input{width:62px;padding:5px 6px;font-size:13px;text-align:center;border-radius:7px}
+  table.grid tr:last-child td{border-bottom:none}
+  td.calc{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);background:var(--accent-soft)}
+  .lowband td:first-child{color:var(--warm)}.lowband td.calc{color:#b9770a;background:#2e2716}
+  .ptbtns{display:flex;gap:8px;margin:12px 0}
+
+  /* 频率调节行（听力） */
+  .freqrow{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+  .freqrow:last-child{border-bottom:none}
+  .freqlab{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .freqlab small{display:block;font-size:10.5px;color:var(--muted);font-weight:500}
+  .ctrl{display:flex;align-items:center;gap:7px}
+  .stepper{display:flex;align-items:center;gap:4px}
+  .sbtn{width:32px;height:32px;border:1px solid var(--line);background:#11181f;border-radius:8px;cursor:pointer;
+    font-size:13px;font-weight:700;color:var(--muted);font-family:inherit;transition:.12s;line-height:1;flex:none}
+  .sbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--panel)}.sbtn:active{transform:scale(.92)}
+  .sbtn.fine{font-size:11px}
+  .val2{width:58px;text-align:center;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;
+    padding:5px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+  .val2.curveA{color:var(--blue)}.val2.curveB{color:var(--red)}
+  .barwrap{flex:1;height:8px;background:#1f2a33;border-radius:5px;overflow:hidden;min-width:50px}
+  .bar{height:100%;border-radius:5px;transition:width .15s}
+  .which{display:flex;gap:8px;margin-bottom:14px}
+  .which button{flex:1;border:1px solid var(--line);background:var(--panel);padding:8px;border-radius:9px;cursor:pointer;
+    font-size:13px;color:var(--muted);font-family:inherit;font-weight:600}
+  .which button.aOn{border-color:var(--blue);color:var(--blue);background:#16242e;border-width:2px}
+  .which button.bOn{border-color:var(--red);color:var(--red);background:#2e1a1a;border-width:2px}
+  .tonebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+  .tonebar-lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+  .rowplay{width:30px;height:30px;flex:none;border:1px solid var(--line);background:var(--panel);border-radius:8px;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;color:var(--accent);transition:.12s;padding:0}
+  .rowplay:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .rowplay.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .rowplay svg{width:13px;height:13px}
+  .rowplay.alt{color:var(--red)}.rowplay.alt:hover{border-color:var(--red);background:#2e1a1a}
+  .rowplay.alt.on{background:var(--red);border-color:var(--red);color:#fff}
+
+  .gradeline{font-size:13.5px;margin-top:10px;padding:10px 14px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+  .gradeline b{color:var(--ink)}
+  svg.chart{width:100%;height:auto;display:block;background:#f3f6f8;border-radius:10px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:14px;height:3px;border-radius:2px}.legend i.dot{width:9px;height:9px;border-radius:50%}
+
+  /* 发声器 */
+  .tonerow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .playbtn{width:60px;height:60px;border-radius:50%;border:none;background:var(--accent);color:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(15,181,142,.4);transition:.15s;flex:none}
+  .playbtn:hover{filter:brightness(1.06)}.playbtn:active{transform:scale(.94)}
+  .playbtn svg{width:26px;height:26px}
+  .playbtn.playing{background:var(--red);box-shadow:0 8px 20px rgba(225,85,84,.4)}
+  .slider{width:100%;-webkit-appearance:none;height:6px;border-radius:5px;background:#2a3742;outline:none}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);
+    cursor:pointer;box-shadow:0 2px 6px rgba(15,181,142,.4)}
+  .slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+  .bigval{font-size:22px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
+
+  /* 直达声场 */
+  .ds-layout{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-top:16px}
+  @media(max-width:780px){.ds-layout{grid-template-columns:1fr}}
+  .ds-main{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .ds-canvas{width:100%;height:460px;display:block;background:#0d1b2a;cursor:crosshair}
+  .ds-cbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .ds-cbar-grad{flex:none;width:140px;height:10px;border-radius:5px;background:linear-gradient(90deg,#0d1b2a,#285aa0,#0fb58e,#e6c83c,#dc4632)}
+  .ds-side{display:flex;flex-direction:column;gap:12px}
+  .ds-group{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+  .ds-group>label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:6px}
+  .ds-group select,.ds-group input[type=number]{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;background:#11181f}
+  .ds-check{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink);font-weight:500;margin-bottom:8px;cursor:pointer}
+  .ds-check:last-child{margin-bottom:0}
+
+  /* 窄屏：侧栏改为顶部横向导航 */
+  @media(max-width:640px){
+    html,body{height:auto}
+    .app{flex-direction:column;height:auto;overflow:visible}
+    .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--line)}
+    .modnav{flex-direction:row;flex-wrap:wrap;overflow:visible}
+    .modnav button{flex:1 1 auto;justify-content:center}
+    .side-foot{display:none}
+    .content{overflow:visible}
+    .wrap{padding:8px 14px 60px}
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#04130e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3l3-7 4 14 3-9 2 2h5"/></svg></div>
+        <div><h1>声场与信号速查</h1><div class="sub">Signal Toolkit</div></div>
+      </div>
+      <nav class="modnav" id="modnav">
+        <button class="on" data-mod="unitdb"><span class="nav-ic">🔢</span><span>分贝 / 单位换算</span></button>
+        <button data-mod="heatmap"><span class="nav-ic">🌡️</span><span>声压热力图</span></button>
+        <button data-mod="directfield"><span class="nav-ic">📡</span><span>声场模拟</span></button>
+        <button data-mod="signal"><span class="nav-ic">〜</span><span>信号发生器</span></button>
+        <button data-mod="insulation"><span class="nav-ic">🧱</span><span>隔声测量</span></button>
+      </nav>
+      <div class="side-foot">
+        <details>
+          <summary>报告信息</summary>
+          <input id="rep_proj" type="text" placeholder="项目名称">
+          <input id="rep_oper" type="text" placeholder="测试 / 计算人">
+        </details>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="wrap">
+        <!-- ========== 模块占位，脚本注入 ========== -->
+        <div class="module active" id="mod-unitdb"><div class="modhead"><h2>分贝运算 / 单位换算</h2><p>声压级能量叠加与平均、背景噪声修正、声压/声强/声功率与分贝的双向换算</p></div>
+
+<nav class="tabs" id="ud-tabs">
+  <button class="tab active" data-t="db">分贝运算</button>
+  <button class="tab" data-t="conv">单位换算</button>
+</nav>
+
+<section class="panel active" data-p="db">
+  <div class="card">
+    <h3>分贝叠加 / 平均</h3>
+    <p class="desc">把多个声压级（dB）能量叠加或求能量平均。用于合并多个声源或多次测量。</p>
+    <div class="levellist" id="dbList"></div>
+    <button class="btn ghost small" onclick="addDb()">+ 添加一个数值</button>
+    <div class="seg" style="margin-top:14px">
+      <button class="on" data-m="sum" onclick="dbMode('sum',this)">能量叠加 (∑)</button>
+      <button data-m="avg" onclick="dbMode('avg',this)">能量平均 (Leq)</button>
+    </div>
+    <div class="result"><div class="lbl" id="dbLbl">合计声压级</div><div class="big" id="dbOut">— dB</div></div>
+    <p class="hint"><code>L = 10·log₁₀(Σ 10^(Lᵢ/10))</code>｜平均：除以个数后取对数。两个相等声源叠加 +3 dB。</p>
+  </div>
+  <div class="card">
+    <h3>背景噪声修正</h3>
+    <p class="desc">从「声源+背景」总值中扣除背景噪声，得到声源本身的级。</p>
+    <div class="grid2">
+      <div class="field"><label>总测量值 L_total (dB) <span class="note">声源开启时声级计读数</span></label><input type="number" id="bgTotal" value="65" oninput="calcBg()"></div>
+      <div class="field"><label>背景噪声 L_bg (dB) <span class="note">声源关闭时的环境本底</span></label><input type="number" id="bgNoise" value="58" oninput="calcBg()"></div>
+    </div>
+    <div class="result"><div class="lbl">声源净声压级</div><div class="big" id="bgOut">— dB</div><div class="extra" id="bgNote"></div></div>
+    <p class="hint">差值 &lt;3 dB 时背景过高，结果不可靠（ISO 1996）；差值 &gt;10 dB 可忽略修正。</p>
+  </div>
+</section>
+
+<section class="panel" data-p="conv">
+  <div class="card">
+    <h3>声压 ↔ 分贝 (SPL)</h3>
+    <p class="desc">基准声压 p₀ = 20 µPa。<code>L_p = 20·log₁₀(p/20µPa)</code></p>
+    <div class="row">
+      <div class="field"><label>声压 p (Pa) <span class="note">瞬时声压有效值</span></label><input type="number" id="c_pa" value="0.02" step="0.001" oninput="paToDb()"></div>
+      <button class="swap" onclick="document.getElementById('c_db').focus()">⇄</button>
+      <div class="field"><label>声压级 (dB SPL)</label><input type="number" id="c_db" value="60" oninput="dbToPa()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>声强 ↔ 声强级</h3>
+    <p class="desc">声强 I = 单位面积通过的声功率（声强探头测得）。基准 I₀ = 1×10⁻¹² W/m²。<code>L_I = 10·log₁₀(I/I₀)</code></p>
+    <div class="row">
+      <div class="field"><label>声强级 L_I (dB re 1pW/m²) <span class="note">日常用这个，60~120 dB</span></label><input type="number" id="c_LI" value="60" oninput="dbToInt()"></div>
+      <button class="swap" onclick="document.getElementById('c_I').focus()">⇄</button>
+      <div class="field"><label>声强 I (W/m²) <span class="note">物理量，自动换算</span></label><input type="text" id="c_I" value="1.0×10⁻⁶" oninput="intToDb()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>声功率 ↔ 声功率级</h3>
+    <p class="desc">声功率 W = 声源向外辐射的总功率。基准 W₀ = 1×10⁻¹² W。<code>L_W = 10·log₁₀(W/W₀)</code></p>
+    <div class="row">
+      <div class="field"><label>声功率级 L_W (dB re 1pW) <span class="note">声源铭牌常标，80~120 dB</span></label><input type="number" id="c_LW" value="80" oninput="dbToPow()"></div>
+      <button class="swap" onclick="document.getElementById('c_W').focus()">⇄</button>
+      <div class="field"><label>声功率 W (W) <span class="note">物理量，自动换算</span></label><input type="text" id="c_W" value="1.0×10⁻⁴" oninput="powToDb()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>声强级 ↔ 声功率级（经测量面积）</h3>
+    <p class="desc">声功率 = 声强 × 包络声源的测量面积 S，对应级的关系 <code>L_W = L_I + 10·log₁₀(S)</code>。声强法测声功率（GB/T 16404 / ISO 9614）正是在包络声源的测量面 S 上测平均声强，再乘面积得声功率。</p>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="field"><label>平均声强级 L_I (dB) <span class="note">测量面上的面平均声强级</span></label><input type="number" id="cv_LI" value="60" oninput="cvFromLI()"></div>
+      <div class="field"><label>测量面积 S (m²) <span class="note">包络声源的假想面，见下方常用值</span></label><input type="number" id="cv_S" value="10" step="0.1" oninput="cvFromLI()"></div>
+      <div class="field"><label>声功率级 L_W (dB) <span class="note">结果，也可反填求 L_I</span></label><input type="number" id="cv_LW" value="70" oninput="cvFromLW()"></div>
+    </div>
+    <p class="hint" id="cv_hint"></p>
+    <div class="seg" style="margin-top:8px;flex-wrap:wrap">
+      <button onclick="cvSetS(1)">1 m²（参考）</button>
+      <button onclick="cvSetS(6.28)">半球 r=1m</button>
+      <button onclick="cvSetS(12.57)">整球 r=1m</button>
+      <button onclick="cvSetS(25.13)">半球 r=2m</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>声压级 ↔ 声功率级（含声场环境与距离）</h3>
+    <p class="desc">点声源在不同声场环境下，距离 r 处声压级与声功率级的关系：<code>L_p = L_W − 10·log₁₀(4πr²/Q)</code>，Q 为指向性因数（声源所处空间决定）。对应 ISO 3744/3745 自由场/半自由场声功率测量模型。距离每增加一倍，自由场声压级降 6 dB。</p>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="field"><label>声功率级 L_W (dB) <span class="note">声源固有属性，与环境无关</span></label><input type="number" id="sw_LW" value="100" oninput="swFromLW()"></div>
+      <div class="field"><label>距离 r (m) <span class="note">测点到声源中心</span></label><input type="number" id="sw_r" value="1" step="0.1" min="0.1" oninput="swFromLW()"></div>
+      <div class="field"><label>声压级 L_p (dB) <span class="note">结果，也可反填求 L_W</span></label><input type="number" id="sw_Lp" value="89" oninput="swFromLp()"></div>
+    </div>
+    <label style="margin-top:10px;display:block;font-size:13px;color:var(--ink)">声场环境（指向性因数 Q）</label>
+    <div class="seg" id="sw_envSeg" style="margin-top:6px;flex-wrap:wrap">
+      <button class="on" onclick="swSetQ(1,this)">全消声室 / 自由场 Q=1</button>
+      <button onclick="swSetQ(2,this)">半消声室 / 地面 Q=2</button>
+      <button onclick="swSetQ(4,this)">二面角（墙角）Q=4</button>
+      <button onclick="swSetQ(8,this)">三面角（房角）Q=8</button>
+    </div>
+    <p class="hint" id="sw_hint"></p>
+    <div class="notebox" style="background:#fdf3e1;border-color:#f6d99a;color:#8a5e08;margin-top:8px">
+      此为<b>自由声场点声源</b>理想模型：仅含直达声、无反射混响。室内远处声压级受混响声场主导，需用房间常数另算（混响半径外趋于稳定，不再随距离下降）。全消声室最接近此模型；半消声室适用于置于硬反射地面的声源。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>百分比 ↔ 分贝（幅值比）</h3>
+    <p class="desc">用于增益/衰减比例换算。<code>dB = 20·log₁₀(ratio)</code></p>
+    <div class="row">
+      <div class="field"><label>比例 (%)</label><input type="number" id="c_pct" value="50" oninput="pctToDb()"></div>
+      <button class="swap" onclick="document.getElementById('c_dbr').focus()">⇄</button>
+      <div class="field"><label>变化 (dB)</label><input type="number" id="c_dbr" value="-6.02" step="0.1" oninput="dbToPct()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>传声器灵敏度 ↔ 电压</h3>
+    <p class="desc">话筒灵敏度常标为 <code>dB re 1V/Pa</code>（如测量话筒 −30 dB re 1V/Pa），与线性 mV/Pa 等价。配合基准 <b>1 Pa = 94 dB SPL</b>（1 kHz），即可在声压级、灵敏度、输出电压之间互算。</p>
+
+    <p class="note" style="margin:2px 0 6px;color:var(--ink);font-weight:600">① 灵敏度：mV/Pa ↔ dB re 1V/Pa</p>
+    <div class="row">
+      <div class="field"><label>灵敏度 (mV/Pa) <span class="note">线性值，厂家规格常见</span></label><input type="number" id="mic_mv" value="31.6" step="0.1" oninput="micFromMv()"></div>
+      <button class="swap" onclick="document.getElementById('mic_dbv').focus()">⇄</button>
+      <div class="field"><label>灵敏度 (dB re 1V/Pa) <span class="note">= 20·log₁₀(V/Pa)，多为负值</span></label><input type="number" id="mic_dbv" value="-30" step="0.1" oninput="micFromDb()"></div>
+    </div>
+    <div class="seg" style="margin-top:2px;flex-wrap:wrap">
+      <button onclick="micSetSens(50)">测量 −26dB(50mV/Pa)</button>
+      <button onclick="micSetSens(31.6)">测量 −30dB(31.6mV/Pa)</button>
+      <button onclick="micSetSens(14)">电容录音 −37dB(14mV/Pa)</button>
+      <button onclick="micSetSens(2)">动圈 −54dB(2mV/Pa)</button>
+    </div>
+    <p class="hint" id="mic_ubarNote" style="margin-top:6px"></p>
+
+    <p class="note" style="margin:14px 0 6px;color:var(--ink);font-weight:600">② 声压级 ↔ 输出电压（用上方灵敏度）</p>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+      <div class="field"><label>声压级 SPL (dB) <span class="note">作用于话筒的声压级</span></label><input type="number" id="mic_spl" value="94" oninput="micFromSPL()"></div>
+      <div class="field"><label>前置/系统增益 (dB) <span class="note">可选，话筒后级放大量</span></label><input type="number" id="mic_gain" value="0" step="1" oninput="micFromSPL()"></div>
+      <div class="field"><label>输出电压 (mVrms) <span class="note">结果，也可反填求 SPL</span></label><input type="number" id="mic_vout" value="31.6" step="0.01" oninput="micFromVout()"></div>
+    </div>
+    <div class="results" style="margin-top:10px">
+      <div class="rcell spec"><div class="lbl">输出电压（含增益）</div><div class="big" style="font-size:22px"><span id="mic_voutBig">—</span> <span class="u" id="mic_voutU">mVrms</span></div></div>
+      <div class="rcell"><div class="lbl">输出电平</div><div class="big" style="font-size:22px"><span id="mic_dbv_out">—</span> <span class="u">dBV</span></div></div>
+      <div class="rcell"><div class="lbl">作用声压</div><div class="big" style="font-size:22px"><span id="mic_pa">—</span> <span class="u">Pa</span></div></div>
+    </div>
+    <p class="hint" id="mic_hint"></p>
+    <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0;margin-top:8px">
+      灵敏度是在 <b>1 kHz、1 Pa（94 dB SPL）</b> 下定义的：此时话筒输出电压正好等于灵敏度本身。旧规格偶用 <code>dB re 1V/µbar</code>（1 µbar=0.1 Pa），比 dB re 1V/Pa 低 20 dB。此处不含话筒自噪声、指向性与频响起伏。
+    </div>
+  </div>
+</section>
+</div>
+    <div class="module" id="mod-heatmap"><div class="modhead"><h2>声压级热力图</h2><p>录入空间测点的声压级，插值生成点云热力图，直观看出声场分布与热点</p></div>
+
+<div class="card">
+  <h3><span class="step">1</span>测量区域与网格</h3>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+    <div class="field"><label>区域宽 X (m) <span class="note">平面横向尺寸</span></label><input type="number" id="hm_w" value="8" oninput="hmRebuild()"></div>
+    <div class="field"><label>区域深 Y (m) <span class="note">平面纵向尺寸</span></label><input type="number" id="hm_h" value="6" oninput="hmRebuild()"></div>
+    <div class="field"><label>网格列数 <span class="note">横向测点数</span></label><input type="number" id="hm_nx" value="5" min="2" max="12" oninput="hmRebuild()"></div>
+    <div class="field"><label>网格行数 <span class="note">纵向测点数</span></label><input type="number" id="hm_ny" value="4" min="2" max="12" oninput="hmRebuild()"></div>
+  </div>
+  <p class="hint">在规则网格交点逐格填入实测声压级 (dB)。测点越密、越均匀，插值越接近真实声场。空格留空将按邻近插值估计。</p>
+</div>
+
+<div class="card">
+  <h3><span class="step">2</span>频带与数据输入</h3>
+  <p class="desc">每个测点可记录多个倍频带的声压级，下方切换查看哪个频带的热力图。表格只显示当前选中频带，填值会存到该测点对应频带，互不影响。</p>
+  <div class="seg" id="hm_bandSeg" style="margin-bottom:12px"></div>
+  <div class="ptbtns">
+    <button class="btn ghost tiny" onclick="hmDemo()">填入示例（全频带）</button>
+    <button class="btn ghost tiny" onclick="hmClear()">清空当前频带</button>
+    <button class="btn ghost tiny" onclick="hmClearAll()">清空全部频带</button>
+    <button class="btn ghost tiny" onclick="hmPasteToggle()">📋 批量粘贴导入</button>
+  </div>
+  <div id="hm_pasteBox" style="display:none;margin-top:10px">
+    <p class="note" style="margin-bottom:6px">每行一个测点，按表格顺序（从左到右、从上到下）；每行内按 <b>125, 250, 500, 1000, 2000, 4000</b> 顺序填6个数值，用 Tab、空格或逗号分隔——可直接从 Excel 整块复制粘贴。行数不足的测点不受影响，多出的行忽略。</p>
+    <textarea id="hm_pasteArea" rows="6" placeholder="72  70  68  65  60  55
+74  71  69  66  61  56
+70  69  67  64  59  54
+..." style="width:100%;font-family:ui-monospace,monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:8px;resize:vertical"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn small" onclick="hmPasteApply()">✓ 解析并填入</button>
+      <button class="btn ghost small" onclick="hmPasteToggle()">取消</button>
+    </div>
+    <div class="extra" id="hm_pasteMsg" style="margin-top:6px"></div>
+  </div>
+  <div class="tablewrap" style="margin-top:12px"><table class="grid" id="hmTable"></table></div>
+</div>
+
+<div class="card">
+  <h3><span class="step">3</span>显示设置</h3>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+    <div class="field"><label>插值方式</label>
+      <select id="hm_interp" onchange="hmDraw()">
+        <option value="idw">反距离加权 IDW（平滑）</option>
+        <option value="bilinear">双线性（规则网格）</option>
+        <option value="none">仅显示测点（不插值）</option>
+      </select>
+    </div>
+    <div class="field"><label>色阶范围</label>
+      <select id="hm_scale" onchange="hmDraw()">
+        <option value="auto">自动（按数据最小–最大）</option>
+        <option value="fixed">固定（手动设上下限）</option>
+      </select>
+    </div>
+    <div class="field" id="hm_minWrap" style="display:none"><label>下限 (dB)</label><input type="number" id="hm_min" value="40" oninput="hmDraw()"></div>
+    <div class="field" id="hm_maxWrap" style="display:none"><label>上限 (dB)</label><input type="number" id="hm_max" value="90" oninput="hmDraw()"></div>
+    <div class="field"><label>显示测点数值</label>
+      <select id="hm_showval" onchange="hmDraw()">
+        <option value="yes">显示</option>
+        <option value="no">隐藏</option>
+      </select>
+    </div>
+    <div class="field"><label>等值线（等声压线）</label>
+      <select id="hm_contour" onchange="hmDraw()">
+        <option value="yes">显示</option>
+        <option value="no">隐藏</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3><span class="step">4</span>声场热力图</h3>
+  <div class="results" style="margin-bottom:14px">
+    <div class="rcell"><div class="lbl">最大声压级</div><div class="big" style="font-size:24px"><span id="hm_vmax">—</span> <span class="u">dB</span></div></div>
+    <div class="rcell"><div class="lbl">最小声压级</div><div class="big" style="font-size:24px"><span id="hm_vmin">—</span> <span class="u">dB</span></div></div>
+    <div class="rcell"><div class="lbl">能量平均 Leq</div><div class="big" style="font-size:24px"><span id="hm_leq">—</span> <span class="u">dB</span></div></div>
+    <div class="rcell"><div class="lbl">极差（不均匀度）</div><div class="big" style="font-size:24px"><span id="hm_range">—</span> <span class="u">dB</span></div></div>
+  </div>
+  <svg class="chart" id="hmCanvas" viewBox="0 0 720 540" preserveAspectRatio="xMidYMid meet"></svg>
+  <p class="hint">颜色由蓝（低）经绿黄到红（高）。热点提示声能集中区，可用于定位泄漏、声源主瓣或驻波腹点。插值仅为可视化估计，非测量值。</p>
+  <button class="btn small" onclick="hmExport()" style="margin-top:6px">📄 导出热力图报告</button>
+</div>
+</div>
+    <div class="module" id="mod-directfield"><div class="modhead"><h2>声场模拟</h2><p>复数声压叠加，二维切面热图——单/多声源干涉、直线/弧形阵列、波束偏转、聚焦、相控阵、DFAT 直接场</p></div>
+
+<div class="card">
+  <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0">
+    <b>直达声场模型</b>（同 EASE Focus 思路）：只计算声源直接辐射的复数声压叠加 <code>p = Σ (Aᵢ/rᵢ)·e^(−jkrᵢ+jφᵢ)</code>，<b>不含反射与混响</b>。能真实呈现阵列的主瓣、旁瓣、栅瓣、干涉条纹与聚焦——相控原理与雷达/航天相控阵同源。各单元为理想点源，未含实际换能器指向性。理论依据见下方"模型依据与文献"。
+  </div>
+</div>
+
+<div class="ds-layout">
+  <div class="ds-main">
+    <canvas id="dsCanvas" class="ds-canvas"></canvas>
+    <div class="ds-cbar"><span>低</span><div class="ds-cbar-grad"></div><span>高 dB</span><span id="ds_readout" style="margin-left:auto;font-variant-numeric:tabular-nums"></span></div>
+  </div>
+  <div class="ds-side">
+    <div class="ds-group">
+      <label>声源 / 阵列类型</label>
+      <select id="ds_type" onchange="dsTypeChange()">
+        <option value="single">单点声源</option>
+        <option value="multi">多点声源（自定义）</option>
+        <option value="line" selected>直线阵列</option>
+        <option value="curve">弧形阵列（纯弧 / J 形）</option>
+        <option value="focus">聚焦阵列</option>
+        <option value="phased">相控阵（波束偏转）</option>
+        <option value="dfat">DFAT 平面/三维阵列（直接场声学测试）</option>
+      </select>
+    </div>
+
+    <div class="ds-group">
+      <label>频率 <span class="bigval" id="ds_fLbl" style="font-size:14px">2000</span> Hz <span class="note">波长 <span id="ds_wl">0.17</span> m</span></label>
+      <input type="range" class="slider" id="ds_f" min="50" max="8000" value="2000" step="10" oninput="dsRender()">
+    </div>
+
+    <div class="ds-group" id="ds_arrayBox">
+      <label>阵列单元数 <span class="bigval" id="ds_NLbl" style="font-size:14px">12</span></label>
+      <input type="range" class="slider" id="ds_N" min="2" max="32" value="12" step="1" oninput="dsRender()">
+      <label style="margin-top:8px">单元间距 <span class="bigval" id="ds_dLbl" style="font-size:14px">0.10</span> m <span class="note" id="ds_gratingWarn"></span></label>
+      <input type="range" class="slider" id="ds_d" min="0.02" max="0.5" value="0.10" step="0.01" oninput="dsRender()">
+    </div>
+
+    <div class="ds-group" id="ds_steerBox" style="display:none">
+      <label>波束偏转角 <span class="bigval" id="ds_steerLbl" style="font-size:14px">0</span>° <span class="note">主瓣指向</span></label>
+      <input type="range" class="slider" id="ds_steer" min="-80" max="80" value="0" step="1" oninput="dsRender()">
+    </div>
+
+    <div class="ds-group" id="ds_curveBox" style="display:none">
+      <label>阵列形状</label>
+      <select id="ds_curveShape" onchange="dsRender()" style="margin-bottom:8px">
+        <option value="arc">纯弧形（uniform arc，恒定曲率）</option>
+        <option value="j">J 形（上直下弧）</option>
+      </select>
+      <label>扇形总角度（included angle）<span class="bigval" id="ds_curveLbl" style="font-size:14px">40</span>° <span class="note">阵列首尾单元朝向夹角</span></label>
+      <input type="range" class="slider" id="ds_curve" min="0" max="160" value="40" step="5" oninput="dsRender()">
+      <div id="ds_jBox" style="display:none">
+        <label style="margin-top:8px">直线段占比 <span class="bigval" id="ds_jStraightLbl" style="font-size:14px">40</span>% <span class="note">上部直段（远投射）比例，余下为弧段（宽覆盖）</span></label>
+        <input type="range" class="slider" id="ds_jStraight" min="0" max="90" value="40" step="5" oninput="dsRender()">
+      </div>
+      <p class="note" id="ds_splayNote" style="margin-top:6px"></p>
+    </div>
+
+    <div class="ds-group" id="ds_focusBox" style="display:none">
+      <label>焦点距离 <span class="bigval" id="ds_fdLbl" style="font-size:14px">4.0</span> m</label>
+      <input type="range" class="slider" id="ds_fd" min="0.5" max="12" value="4" step="0.1" oninput="dsRender()">
+      <label style="margin-top:8px">焦点横向偏移 <span class="bigval" id="ds_fxLbl" style="font-size:14px">0.0</span> m</label>
+      <input type="range" class="slider" id="ds_fx" min="-5" max="5" value="0" step="0.1" oninput="dsRender()">
+    </div>
+
+    <div class="ds-group" id="ds_ringBox" style="display:none">
+      <label>DFAT 阵列布局</label>
+      <select id="ds_dfatLayout" onchange="dsDfatLayoutUpd();dsRender()" style="margin-bottom:8px">
+        <option value="flatPlane">多点平面声源（单排平面）</option>
+        <option value="arcPlane">弧形平面声源（凹弧朝测试件）</option>
+        <option value="flat3d">平面三维阵列（行×列网格）</option>
+        <option value="arc3d">弧形三维阵列（弧面网格）</option>
+      </select>
+      <label>阵列到测试件距离 <span class="bigval" id="ds_ringRLbl" style="font-size:14px">3.0</span> m <span class="note">测试件(UUT)中心到阵列声学中心的距离；NASA-HDBK-7010 建议传声器距扬声器前面 ≥0.9m、距试件 ≥0.6m</span></label>
+      <input type="range" class="slider" id="ds_ringR" min="0.5" max="12" value="3" step="0.1" oninput="dsRingUpd();dsRender()">
+      <div id="ds_arcIncBox" style="display:none">
+        <label style="margin-top:8px">弧面扇形角 <span class="bigval" id="ds_arcIncLbl" style="font-size:14px">60</span>° <span class="note">弧形阵列首尾朝向夹角</span></label>
+        <input type="range" class="slider" id="ds_arcInc" min="10" max="160" value="60" step="5" oninput="dsRingUpd();dsRender()">
+      </div>
+      <div id="ds_3dRowBox" style="display:none">
+        <label style="margin-top:8px">三维阵列排数（纵深分层）<span class="bigval" id="ds_rowsLbl" style="font-size:14px">3</span> <span class="note">列数沿用上方"阵列单元数"</span></label>
+        <input type="range" class="slider" id="ds_rows" min="2" max="8" value="3" step="1" oninput="dsRingUpd();dsRender()">
+      </div>
+      <label style="margin-top:8px">测试件宽 × 高 <span class="bigval" id="ds_twLbl" style="font-size:13px">1.5</span> × <span class="bigval" id="ds_thLbl" style="font-size:13px">1.5</span> m <span class="note">被测单元(UUT)尺寸</span></label>
+      <input type="range" class="slider" id="ds_tw" min="0.3" max="6" value="1.5" step="0.1" oninput="dsRingUpd();dsRender()">
+      <input type="range" class="slider" id="ds_th" min="0.3" max="6" value="1.5" step="0.1" oninput="dsRingUpd();dsRender()" style="margin-top:4px">
+      <p class="note" style="margin-top:6px">单元数沿用上方"阵列单元数"滑块。受限于二维水平切面，"三维/多排"在此建模为沿传播方向（纵深）分层的多排声源，并非真实竖直维；均匀性在测试件水平面上采样评估。真实三维声场需专业软件或实测。</p>
+    </div>
+
+    <div class="ds-group" id="ds_multiBox" style="display:none">
+      <label>声源（点击画布添加，拖动移动）</label>
+      <div id="ds_srcList" style="font-size:12px;color:var(--muted)"></div>
+      <button class="btn ghost tiny" onclick="dsClearSrc()" style="margin-top:6px">清空声源</button>
+    </div>
+
+    <div class="ds-group">
+      <label>显示范围 <span class="bigval" id="ds_spanLbl" style="font-size:14px">12</span> m</label>
+      <input type="range" class="slider" id="ds_span" min="3" max="40" value="12" step="1" oninput="dsRender()">
+      <label style="margin-top:8px">动态范围 <span class="bigval" id="ds_dynLbl" style="font-size:14px">40</span> dB</label>
+      <input type="range" class="slider" id="ds_dyn" min="12" max="60" value="40" step="2" oninput="dsRender()">
+    </div>
+
+    <div class="ds-group">
+      <label class="ds-check"><input type="checkbox" id="ds_phase" onchange="dsRender()"> 显示相位干涉条纹</label>
+      <label class="ds-check"><input type="checkbox" id="ds_beam" checked onchange="dsRender()"> 标注 −6dB 主瓣边界</label>
+    </div>
+
+    <div class="ds-group">
+      <button class="btn small" id="ds_demoBtn" onclick="dsDemoToggle()" style="width:100%;margin-bottom:8px">▶ 一键动态演示</button>
+      <button class="btn small" onclick="dsExport()" style="width:100%">📄 导出声场报告</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>方向性图样（阵列远场）</h3>
+  <p class="desc">表达<b>阵列整体的方向性</b>：在远场（观测距离远大于阵列孔径，此处取 1000 m）扫描各角度，得到归一化的<b>相对声压级</b>。同心圆刻度为相对 dB，主瓣峰值为 0 dB 基准，向内每圈递减。由此直观读出主瓣指向、波束宽度、旁瓣与栅瓣。注意这是远场方向性，与上方近场二维声场切面（含距离衰减的绝对分布）是两种不同视角。</p>
+  <svg class="chart" id="dsPolar" viewBox="0 0 720 360" preserveAspectRatio="xMidYMid meet"></svg>
+  <div class="results" style="margin-top:8px">
+    <div class="rcell spec"><div class="lbl">主瓣方向</div><div class="big" style="font-size:22px"><span id="ds_mainDir">—</span> <span class="u">°</span></div></div>
+    <div class="rcell"><div class="lbl">−6dB 波束宽度</div><div class="big" style="font-size:22px"><span id="ds_bw">—</span> <span class="u">°</span></div></div>
+    <div class="rcell"><div class="lbl">最大旁瓣电平</div><div class="big" style="font-size:22px"><span id="ds_sll">—</span> <span class="u">dB</span></div></div>
+    <div class="rcell"><div class="lbl">栅瓣风险</div><div class="big" style="font-size:18px"><span id="ds_grating">—</span></div></div>
+  </div>
+  <p class="hint">栅瓣判据：单元间距 d &gt; λ/2 时高频出现栅瓣（能量泄漏到非预期方向）。波束宽度随单元数增多、孔径增大而变窄。这些是阵列/相控阵设计的核心权衡。</p>
+</div>
+
+<div class="card" id="ds_dfatCard" style="display:none">
+  <h3>DFAT 声场均匀性评估</h3>
+  <p class="desc">直接场声学测试（Direct Field Acoustic Testing）用扬声器阵列在测试件（UUT）表面产生均匀、受控的直接声场，替代传统混响室声学测试。核心要求是测试区域内声压级<b>均匀</b>，行业典型容差为各控制点偏差 ±3dB 内（极差 ≤ 6dB），且需跨各倍频带分别满足。可选四种阵列布局：多点平面、弧形平面、平面三维、弧形三维。NASA-HDBK-7010 推荐用平面传声器阵列评估声场均匀性，按水平面/垂直面分别布置。</p>
+  <div class="results">
+    <div class="rcell spec"><div class="lbl">总体判定（当前频率）</div><div class="big" style="font-size:22px" id="ds_dfatPass">—</div></div>
+    <div class="rcell"><div class="lbl">声压级极差</div><div class="big" style="font-size:22px"><span id="ds_dfatRange">—</span> <span class="u">dB</span></div></div>
+    <div class="rcell"><div class="lbl">测试区域均值</div><div class="big" style="font-size:22px"><span id="ds_dfatMean">—</span> <span class="u">dB(相对)</span></div></div>
+  </div>
+  <p class="desc" style="margin:14px 0 6px"><b>分倍频带均匀性</b>（125–4000Hz 各自评估，固定阵列布局，仅频率变化）</p>
+  <table class="grid" id="dfatBandTable">
+    <thead><tr><th>频带</th><th>极差 (dB)</th><th>±3dB 容差判定</th></tr></thead>
+    <tbody id="dfatBandTbody"></tbody>
+  </table>
+  <p class="hint">实测 DFAT 系统要满足全频带均匀性通常需要 MIMO 多输入多输出控制系统精细调试阵列各通道的幅度/相位，单纯环绕摆放扬声器（本工具的简化模型）往往在低频和高频两端均匀性较差——这正是 DFAT 工程实践中的核心难点。</p>
+</div>
+
+<div class="card">
+  <h3>模型依据与文献</h3>
+  <p class="desc">本模块各功能的物理模型对应以下公开文献，便于论文/报告引用与方法论支撑：</p>
+  <table class="grid" style="font-size:12.5px">
+    <thead><tr><th>本工具功能</th><th>对应理论 / 文献依据</th></tr></thead>
+    <tbody>
+      <tr><td>复数声压叠加 p=Σ(Aᵢ/rᵢ)e^(−jkrᵢ+jφᵢ)</td><td>离散点源声学叠加合成新方向性；阵列设计基础。Ureda, M. S. "Analysis of Loudspeaker Line Arrays," <i>J. Audio Eng. Soc.</i>, 52(5), 2004</td></tr>
+      <tr><td>直线阵列方向性 / 极坐标 / −6dB 波束宽度</td><td>线源方向性函数 R(θ)，sin(z)/z 形式，四分之一功率角随 L/λ 变化。Ureda 2004 §2；Wolff &amp; Malter（1929）线阵远场极响应</td></tr>
+      <tr><td>弧形阵列（纯弧 / J 形 / 扇形总角度）</td><td>弧源极响应与扇形 included angle、splay angle 建模；J 形为直段+弧段混合（直段远投射、弧段宽覆盖）。Ureda 2004 §4–5</td></tr>
+      <tr><td>相控阵波束偏转 φᵢ=−k·xᵢ·sinθ</td><td>延迟/相位加权实现波束指向；与雷达相控阵同源。Van Trees, <i>Optimum Array Processing</i>；连续曲线/相控线源理论 Acta Acustica 7:48 (2023)</td></tr>
+      <tr><td>栅瓣判据 d &gt; λ/2</td><td>均匀间距阵列超过半波长间距出现栅瓣（空间采样混叠，类比奈奎斯特）。线源工作要求间距 &lt; λ/2</td></tr>
+      <tr><td>聚焦阵列相位补偿 φᵢ=k·rᵢ(焦点)</td><td>近场聚焦：各单元相位补偿使焦点处同相叠加。近场声学阵列聚焦原理</td></tr>
+      <tr><td>DFAT 平面/三维阵列均匀性评估（±3dB）</td><td>扬声器阵列直接场声学测试，测试区声压级均匀性容差；推荐平面传声器阵列评估、分水平/垂直面布置。NASA-HDBK-7010 "Direct Field Acoustic Testing (DFAT)", 2015；容差见 NASA-STD-7001b §4.1；MIMO 控制典型 ±3dB</td></tr>
+    </tbody>
+  </table>
+  <p class="hint">说明：本工具采用<b>理想点源 + 二维复数叠加</b>的简化模型（与 EASE Focus 的直达声场计算同一思路），用于教学演示与方案预研。未包含真实换能器指向性、波导效应、互耦、地面/边界反射；精确工程预测需 CATT-Acoustic、EASE、AFMG 等专业软件或实测验证。</p>
+</div>
+</div>
+    <div class="module" id="mod-signal"><div class="modhead"><h2>信号发生器</h2><p>声学测量常用激励信号：正弦、白/粉/棕噪、对数/线性扫频、猝发音、MLS，含实时频谱示意</p></div>
+
+<div class="card">
+  <div class="notebox">⚠ <b>信号源，非校准声级源</b>。输出为数字电平（满量程 0 dBFS），实际声压取决于声卡、功放、扬声器与系统音量，未经校准。可作为外接测量系统的激励源，但 dB SPL 须用声级计读取。噪声信号听感比正弦更响，请从低音量起步并佩戴护听器。</div>
+</div>
+
+<div class="card">
+  <h3>信号类型</h3>
+  <div class="seg" id="sg_type">
+    <button class="on" data-s="sine">正弦波</button>
+    <button data-s="white">白噪声</button>
+    <button data-s="pink">粉噪声</button>
+    <button data-s="brown">棕噪声</button>
+    <button data-s="logsweep">对数扫频</button>
+    <button data-s="linsweep">线性扫频</button>
+    <button data-s="burst">猝发音</button>
+    <button data-s="mls">MLS</button>
+  </div>
+  <p class="note" id="sg_typeDesc" style="margin-top:4px"></p>
+</div>
+
+<div class="card">
+  <h3>参数</h3>
+  <div class="tonerow">
+    <button class="playbtn" id="sgPlay" onclick="sgToggle()" aria-label="播放/停止">
+      <svg id="sgIcon" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div style="flex:1;min-width:200px">
+      <label>输出电平 <span class="bigval" id="sgVolLbl" style="font-size:16px">40</span> / 60 <span class="note">越大越响（0＝静音，60＝满量程）｜ 技术值 <span id="sgDbfsLbl">−20</span> dBFS</span></label>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <button class="sbtn" onclick="sgVolAdj(-3)" style="width:auto;padding:0 10px;height:32px">−3dB</button>
+        <button class="sbtn fine" onclick="sgVolAdj(-1)" style="width:auto;padding:0 10px;height:32px">−1dB</button>
+        <input type="range" class="slider" id="sgVol" min="0" max="60" value="40" step="1" oninput="sgVolUpd()" style="flex:1">
+        <button class="sbtn fine" onclick="sgVolAdj(1)" style="width:auto;padding:0 10px;height:32px">+1dB</button>
+        <button class="sbtn" onclick="sgVolAdj(3)" style="width:auto;padding:0 10px;height:32px">+3dB</button>
+      </div>
+    </div>
+  </div>
+  <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0">
+    电平换算：<code>gain = 10^(dBFS/20)</code>。当前数字电平对应满量程振幅的 <b id="sg_ampPct">10.0%</b>（线性 gain <b id="sg_gain">0.100</b>）。噪声/方波等高峰值因数信号在同 dBFS 下听感更响。</div>
+
+  <details style="margin-top:12px;font-size:12.5px">
+    <summary style="cursor:pointer;color:var(--muted);user-select:none">声卡输出电压估算（可选，需填校准参考）</summary>
+    <div style="margin-top:10px">
+      <p class="note" style="margin-bottom:10px">数字 dBFS 与模拟电压<b>没有通用换算</b>，取决于你声卡的满量程参考电平（厂家规格书查"max output level"）。填入后才能估算实际输出电压（RMS，正弦满量程为 0 dBFS 约定）。</p>
+      <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div class="field"><label>0 dBFS 对应参考</label>
+          <select id="sg_calref" onchange="sgVolUpd()">
+            <option value="dbu">用 dBu 指定</option>
+            <option value="dbv">用 dBV 指定</option>
+            <option value="vrms">直接填满量程 Vrms</option>
+          </select>
+        </div>
+        <div class="field" id="sg_calvalBox"><label id="sg_calvalLbl">0 dBFS = ? dBu <span class="note">消费声卡常见 +4，专业 +18~+24</span></label><input type="number" id="sg_calval" value="4" step="0.1" oninput="sgVolUpd()"></div>
+        <div class="field"><label>负载阻抗 Ω <span class="note">可选，算功率用</span></label><input type="number" id="sg_load" value="" placeholder="如 600 / 10k" oninput="sgVolUpd()"></div>
+      </div>
+      <div class="results" style="margin-top:6px">
+        <div class="rcell spec"><div class="lbl">估算输出电压（当前电平）</div><div class="big" style="font-size:22px"><span id="sg_vout">—</span> <span class="u">Vrms</span></div></div>
+        <div class="rcell"><div class="lbl">满量程电压（0 dBFS）</div><div class="big" style="font-size:20px"><span id="sg_vfs">—</span> <span class="u">Vrms</span></div></div>
+        <div class="rcell" id="sg_pwrCell" style="display:none"><div class="lbl">负载功率</div><div class="big" style="font-size:20px"><span id="sg_pwr">—</span> <span class="u">mW</span></div></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 单频参数 -->
+  <div id="sg_freqBox" class="field">
+    <label>频率 <span class="bigval" id="sgFreqLbl" style="font-size:16px">1000</span> Hz</label>
+    <input type="range" class="slider" id="sgFreq" min="20" max="20000" value="1000" step="1" oninput="sgFreqUpd()">
+  </div>
+
+  <!-- 扫频参数 -->
+  <div id="sg_sweepBox" style="display:none">
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+      <div class="field"><label>起始频率 (Hz)</label><input type="number" id="sg_f0" value="20" oninput="sgSweepUpd()"></div>
+      <div class="field"><label>结束频率 (Hz)</label><input type="number" id="sg_f1" value="20000" oninput="sgSweepUpd()"></div>
+      <div class="field"><label>扫频时长 (s)</label><input type="number" id="sg_dur" value="10" step="0.5" oninput="sgSweepUpd()"></div>
+      <div class="field"><label>循环</label><select id="sg_loop" onchange="sgSweepUpd()"><option value="1">循环播放</option><option value="0">单次</option></select></div>
+    </div>
+    <div class="result" style="margin-top:4px"><div class="extra" id="sg_sweepNow" style="color:#0a7d63;font-size:13px"></div></div>
+  </div>
+
+  <!-- 猝发音参数 -->
+  <div id="sg_burstBox" style="display:none">
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+      <div class="field"><label>载波频率 (Hz)</label><input type="number" id="sg_bf" value="1000" oninput="sgBurstUpd()"></div>
+      <div class="field"><label>猝发周期数</label><input type="number" id="sg_bcyc" value="5" min="1" oninput="sgBurstUpd()"></div>
+      <div class="field"><label>重复间隔 (ms)</label><input type="number" id="sg_bgap" value="200" oninput="sgBurstUpd()"></div>
+    </div>
+  </div>
+
+  <!-- 声道 -->
+  <div class="which" style="margin-top:12px">
+    <button id="sg_chS" class="aOn" onclick="sgCh('stereo')">双声道</button>
+    <button id="sg_chL" onclick="sgCh('left')">仅左</button>
+    <button id="sg_chR" onclick="sgCh('right')">仅右</button>
+  </div>
+</div>
+
+<div class="card">
+  <h3>实时频谱</h3>
+  <p class="desc">播放时显示信号的频谱形状。白噪平直、粉噪 −3dB/oct 下斜、棕噪 −6dB/oct 更陡，扫频是一条移动的峰——一眼看出各信号的频率特性。</p>
+  <canvas id="sgSpectrum" style="width:100%;height:220px;display:block;border:1px solid var(--line);border-radius:10px;background:#0d1b22"></canvas>
+  <div class="legend"><span><i style="background:#0fb58e"></i>实时频谱</span><span><i style="background:#ffd24a"></i>峰值保持</span><span>横轴：对数频率 20Hz–20kHz</span></div>
+  <p class="hint">频谱由 Web Audio AnalyserNode 实时分析。粉噪是声学测量（RTA、频响）的标准信号；对数扫频用于脉冲响应/RT60 测量；猝发音用于反射/回声分析。</p>
+</div>
+
+<div class="card">
+  <h3>相对响应测量（反向补偿）</h3>
+  <p class="desc">按倒频带逐个播放固定电平的纯音，你用声级计在听音位置实测各频带 SPL 并填入，本工具自动算出<b>相对响应曲线</b>（各频带相对 1kHz 的偏差）。用于了解声卡→功放→扬声器→房间这条链路在测试点的实际相对响应，可发现哪些频段偏响/偏弱。</p>
+  <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0">
+    这是<b>相对测量</b>，不是绝对校准：结果反映"测试链路+房间+测点位置"的综合响应，换个位置或换个房间结果会不同；它不能反推出声卡的绝对 dBFS↔SPL 换算（那需要已知声级计读数对应的精确参考）。
+  </div>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+    <div class="field"><label>测试电平 <span class="bigval" id="cal_lvlLbl" style="font-size:14px">40</span> / 60 <span class="note">建议各频带统一电平</span></label>
+      <input type="range" class="slider" id="cal_lvl" min="0" max="60" value="40" step="1" oninput="calLvlUpd()"></div>
+    <div class="field"><label>每频带播放时长 (s)</label><input type="number" id="cal_dur" value="3" min="1" step="0.5"></div>
+  </div>
+  <table class="grid" id="calTable" style="margin-top:10px">
+    <thead><tr><th>频带</th><th>状态</th><th>实测 SPL (dB)</th><th>相对1kHz偏差</th><th></th></tr></thead>
+    <tbody id="calTbody"></tbody>
+  </table>
+  <div class="ptbtns" style="margin-top:10px">
+    <button class="btn small" id="calPlayBtn" onclick="calStart()">▶ 开始逐频带播放</button>
+    <button class="btn ghost small" onclick="calReset()">清空重测</button>
+  </div>
+  <div class="extra" id="calStatus" style="margin-top:8px"></div>
+  <svg class="chart" id="calChart" viewBox="0 0 720 280" preserveAspectRatio="xMidYMid meet" style="margin-top:12px"></svg>
+  <div class="legend"><span><i style="background:var(--accent)"></i>相对响应曲线</span><span><i style="background:#d8e2e7"></i>0dB 基准（1kHz）</span></div>
+  <button class="btn small" onclick="calExport()" style="margin-top:8px">📄 导出相对响应报告</button>
+  <p class="hint">流程：①设定测试电平 ②点"开始播放"，工具按 125→250→500→1000→2000→4000Hz 顺序逐个播放（每个持续设定时长）③每播完一个频带，立即在该行输入声级计读到的 SPL ④全部填完自动画出相对响应曲线。也可手动点表格中的"播放"单独重播某一频带核对。</p>
+</div>
+</div>
+    <div class="module" id="mod-insulation"><div class="modhead"><h2>隔声量评价</h2><p>发声室/收声室多点声压级 → R / R′ / DnT → ISO 717-1 单值 Rw + C + Ctr</p></div>
+
+<div class="card">
+  <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0">
+    <b>测量标准依据</b>：实验室空气声隔声测量 <b>GB/T 19889.3-2005 / ISO 10140-2</b>；现场测量 <b>GB/T 19889.4 / GB/T 17247.1 / ISO 16283-1</b>；单值评价（Rw + C + Ctr）按 <b>GB/T 50121 / ISO 717-1</b>；门窗隔声分级 <b>GB/T 8485</b>；空气吸收修正 <b>ISO 9613-1</b>。隔声量定义 R = 10·log(入射声功率 / 透射声功率) dB。<br>注：GB 标准采用 1/3 倍频程、频率范围 125–4000 Hz；ISO 为 100–3150 Hz。本工具为工程估算，不替代具备计量资质的检测。
+  </div>
+</div>
+
+<div class="card">
+  <h3><span class="step">1</span>选择隔声量类型</h3>
+  <p class="desc">三种量共用同一组声压级数据，仅修正项不同。切换后下方结果实时重算。</p>
+  <div class="seg" id="qtype">
+    <button class="on" data-q="R">实验室隔声量 R</button>
+    <button data-q="Rp">现场表观隔声量 R′</button>
+    <button data-q="DnT">标准化声压级差 DnT</button>
+  </div>
+  <p class="hint" id="qtypeHint"></p>
+</div>
+
+<div class="card">
+  <h3><span class="step">2</span>房间与试件参数</h3>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    <div class="field"><label>试件面积 S (m²) <span class="note">声波透射的洞口净面积，用卷尺/图纸量取</span></label><input type="number" id="p_S" value="10" oninput="insRecalc()"></div>
+    <div class="field"><label>收声室体积 V (m³) <span class="note">接收侧房间净容积，长×宽×高</span></label><input type="number" id="p_V" value="50" oninput="insRecalc()"></div>
+    <div class="field"><label>发声室测点数 <span class="note">传声器位置数，≥5，空间均布</span></label><input type="number" id="p_n1" value="5" min="1" max="12" oninput="insRebuild()"></div>
+    <div class="field"><label>收声室测点数 <span class="note">同上，接收侧</span></label><input type="number" id="p_n2" value="5" min="1" max="12" oninput="insRebuild()"></div>
+  </div>
+  <p class="hint">收声室吸声量 A 由各频带混响时间反算：<code>A = 0.161·V/T</code>（Sabine）。R 与 R′ 用 S/A，DnT 用 T/T₀（T₀=0.5 s）。</p>
+
+  <div style="margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;color:var(--ink)">
+      <input type="checkbox" id="airCorr" onchange="insRecalc()" style="width:auto">
+      启用高频空气吸收修正（温湿度、气压）
+    </label>
+    <p class="note" style="margin:6px 0 12px">空气吸收主要影响 &gt;1 kHz、大空间。修正后 <code>A = 0.161·V/T − 4·m·V</code>，m 为空气功率衰减系数，依温湿度气压算得（ISO 354 §8.1.2.3 思路，m 按 ISO 9613-1）。常规建筑量影响很小，默认关闭。</p>
+    <div class="grid2" id="airParams" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));display:none">
+      <div class="field"><label>温度 T (°C)</label><input type="number" id="p_temp" value="20" oninput="insRecalc()"></div>
+      <div class="field"><label>相对湿度 RH (%)</label><input type="number" id="p_rh" value="50" min="10" max="100" oninput="insRecalc()"></div>
+      <div class="field"><label>大气压 (kPa)</label><input type="number" id="p_pa" value="101.325" step="0.1" oninput="insRecalc()"></div>
+      <div class="field"><label>m 计算精度</label>
+        <select id="p_mmode" onchange="insRecalc()">
+          <option value="iso">ISO 9613-1 完整式</option>
+          <option value="simple">简化工程式</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3><span class="step">3</span>发声室声压级 L₁ (dB)</h3>
+  <p class="desc">每行一个 1/3 倍频带，每列一个测点。空格留空将忽略，各点按能量平均。</p>
+  <div class="ptbtns"><button class="btn ghost tiny" onclick="insDemo(1)">填入示例</button><button class="btn ghost tiny" onclick="insClear(1)">清空</button><button class="btn ghost tiny" onclick="insPasteToggle(1)">📋 批量粘贴导入</button></div>
+  <div id="ins_pasteBox1" style="display:none;margin:10px 0">
+    <p class="note" style="margin-bottom:6px">每行一个频带（按 50, 63, 80, 100…5000 Hz 共 21 行的顺序），行内每个数为一个测点的 L₁，用 Tab/空格/逗号分隔。可直接从 Excel 整块复制。行数不足时只填前面的频带。</p>
+    <textarea id="ins_pasteArea1" rows="5" placeholder="P1  P2  P3  P4  P5（每行一个频带，从50Hz起）&#10;88  87  89  88  86&#10;..." style="width:100%;font-family:ui-monospace,monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:8px;resize:vertical"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small" onclick="insPasteApply(1)">✓ 解析并填入</button><button class="btn ghost small" onclick="insPasteToggle(1)">取消</button></div>
+    <div class="extra" id="ins_pasteMsg1" style="margin-top:6px"></div>
+  </div>
+  <div class="tablewrap"><table class="grid" id="t1"></table></div>
+</div>
+
+<div class="card">
+  <h3><span class="step">4</span>收声室声压级 L₂ (dB) 与混响时间 T (s)</h3>
+  <p class="desc">L₂ 多点平均；最右列填该频带收声室混响时间。</p>
+  <div class="ptbtns"><button class="btn ghost tiny" onclick="insDemo(2)">填入示例</button><button class="btn ghost tiny" onclick="insClear(2)">清空</button><button class="btn ghost tiny" onclick="insPasteToggle(2)">📋 批量粘贴导入</button></div>
+  <div id="ins_pasteBox2" style="display:none;margin:10px 0">
+    <p class="note" style="margin-bottom:6px">每行一个频带（50…5000 Hz 顺序），行内前几个数为各测点 L₂，<b>最后一个数为该频带混响时间 T(s)</b>。用 Tab/空格/逗号分隔。例如 5 测点则每行 6 个数（5个L₂ + 1个T）。</p>
+    <textarea id="ins_pasteArea2" rows="5" placeholder="P1 P2 P3 P4 P5 T（每行一频带，最后一列是混响时间）&#10;42 41 43 42 40 1.85&#10;..." style="width:100%;font-family:ui-monospace,monospace;font-size:12.5px;padding:10px;border:1px solid var(--line);border-radius:8px;resize:vertical"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small" onclick="insPasteApply(2)">✓ 解析并填入</button><button class="btn ghost small" onclick="insPasteToggle(2)">取消</button></div>
+    <div class="extra" id="ins_pasteMsg2" style="margin-top:6px"></div>
+  </div>
+  <div class="tablewrap"><table class="grid" id="t2"></table></div>
+</div>
+
+<div class="card">
+  <h3><span class="step">5</span>单值评定结果</h3>
+  <div class="results">
+    <div class="rcell spec"><div class="lbl" id="rwLbl">加权隔声量 Rw</div><div class="big"><span id="rwVal">—</span> <span class="u">dB</span></div></div>
+    <div class="rcell"><div class="lbl">C（粉噪修正）</div><div class="big"><span id="cVal">—</span></div></div>
+    <div class="rcell"><div class="lbl">Ctr（交通噪声修正）</div><div class="big"><span id="ctrVal">—</span></div></div>
+    <div class="rcell"><div class="lbl">扩展低频 C₅₀ / Ctr,₅₀</div><div class="big" style="font-size:20px;line-height:1.6"><span id="cExt">—</span></div></div>
+  </div>
+  <div class="warnbox" id="insWarn"></div>
+  <p class="hint" id="rwExpr"></p>
+  <button class="btn small" onclick="insExport()" style="margin-top:6px">📄 导出隔声评定报告</button>
+</div>
+
+<div class="card">
+  <h3><span class="step">6</span>频谱曲线与参考曲线</h3>
+  <svg class="chart" id="chartIns" viewBox="0 0 760 380" preserveAspectRatio="xMidYMid meet"></svg>
+  <div class="legend">
+    <span><i style="background:var(--accent)"></i>实测隔声量</span>
+    <span><i style="background:var(--blue)"></i>ISO 717-1 移位参考曲线</span>
+    <span><i style="background:var(--warm)"></i>50–80 Hz 扩展低频段</span>
+  </div>
+  <p class="hint">参考曲线按 1 dB 步距上移，直到 100–3150 Hz 范围 16 个频带的不利偏差之和 ≤ 32.0 dB 且任一频带不利偏差 ≤ 8 dB（取允许的最高位置）。Rw 即此时参考曲线在 500 Hz 的值。</p>
+</div>
+</div>
+
+    <footer>
+      声场与信号速查 · 全部计算在浏览器本地完成，数据不上传<br>
+      结果为工程估算；直达声场为复数叠加模型，不含反射/混响，不替代专业声学仿真
+    </footer>
+  </div>
+  </div><!-- /wrap -->
+  </main>
+  </div><!-- /app -->
+
+<script>
+/* ============ 顶层模块导航 ============ */
+document.querySelectorAll('#modnav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modnav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.querySelectorAll('.module').forEach(m=>m.classList.remove('active'));
+  document.getElementById('mod-'+b.dataset.mod).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+const $=id=>document.getElementById(id);
+const log10=x=>Math.log(x)/Math.LN10;
+const fmt=(x,d=2)=>isFinite(x)?Number(x.toFixed(d)).toString():'—';
+
+/* ===== 通用报告导出引擎 =====
+   用法：exportReport({title, inputs:[[label,value],...], results:[[label,value,unit?],...], notes, svg}) */
+function buildReportHTML(cfg){
+  const now=new Date();
+  const dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')
+    +' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const proj=$('rep_proj')?$('rep_proj').value:'';
+  const oper=$('rep_oper')?$('rep_oper').value:'';
+  const rowsIn=(cfg.inputs||[]).map(r=>`<tr><td class="k">${r[0]}</td><td class="v">${r[1]}</td></tr>`).join('');
+  const rowsRes=(cfg.results||[]).map(r=>`<tr><td class="k">${r[0]}</td><td class="v strong">${r[1]}${r[2]?' <span class="u">'+r[2]+'</span>':''}</td></tr>`).join('');
+  const svgBlock=cfg.svg?`<div class="rsvg">${cfg.svg}</div>`:'';
+  const tableBlock=cfg.tableHTML?`<div class="rtable">${cfg.tableHTML}</div>`:'';
+  const notesBlock=cfg.notes?`<div class="rnotes"><b>说明</b><br>${cfg.notes}</div>`:'';
+  return `<!DOCTYPE html><html lang="zh"><head><meta charset="UTF-8"><title>${cfg.title} · 声学工作台报告</title>
+<style>
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#1c2b33;line-height:1.55;max-width:760px;margin:0 auto;padding:32px 28px;font-size:13.5px}
+  .rhead{border-bottom:3px solid #0fb58e;padding-bottom:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-end}
+  .rhead h1{font-size:19px;margin:0;color:#0a7d63}
+  .rhead .brand{font-size:12px;color:#67808c;text-align:right}
+  .rmeta{font-size:12px;color:#67808c;margin:10px 0 22px;display:flex;gap:24px;flex-wrap:wrap}
+  .rmeta b{color:#1c2b33;font-weight:600}
+  h2.rsec{font-size:14px;margin:22px 0 8px;color:#1c2b33;border-left:4px solid #0fb58e;padding-left:9px}
+  table.rt{width:100%;border-collapse:collapse;margin:4px 0}
+  table.rt td{padding:7px 10px;border-bottom:1px solid #e3ebee;font-size:13px}
+  table.rt td.k{color:#67808c;width:55%}
+  table.rt td.v{font-variant-numeric:tabular-nums;font-weight:500}
+  table.rt td.v.strong{font-weight:700;color:#0a7d63;font-size:15px}
+  table.rt td.v .u{font-size:11px;color:#67808c;font-weight:400}
+  .rsvg{margin:14px 0;border:1px solid #e3ebee;border-radius:8px;padding:10px;text-align:center}
+  .rsvg svg{max-width:100%;height:auto}
+  .rtable{margin:12px 0;overflow-x:auto}
+  .rtable table{border-collapse:collapse;width:100%;font-size:12px}
+  .rtable th,.rtable td{border:1px solid #e3ebee;padding:5px 8px;text-align:center}
+  .rtable th{background:#f3f6f8;color:#67808c}
+  .rnotes{margin-top:18px;background:#f3f6f8;border-radius:8px;padding:12px 14px;font-size:11.5px;color:#67808c;line-height:1.6}
+  .rfoot{margin-top:26px;padding-top:12px;border-top:1px solid #e3ebee;font-size:11px;color:#9bb0ba;text-align:center}
+  @media print{body{padding:0}.noprint{display:none}}
+</style></head><body>
+  <div class="rhead"><h1>${cfg.title}</h1><div class="brand">声学工作台<br>Acoustics Workbench</div></div>
+  <div class="rmeta">${proj?`<span><b>项目：</b>${proj}</span>`:''}${oper?`<span><b>测试/计算：</b>${oper}</span>`:''}<span><b>生成时间：</b>${dateStr}</span></div>
+  ${rowsIn?`<h2 class="rsec">输入参数</h2><table class="rt">${rowsIn}</table>`:''}
+  ${tableBlock}
+  ${rowsRes?`<h2 class="rsec">计算结果</h2><table class="rt">${rowsRes}</table>`:''}
+  ${svgBlock}
+  ${notesBlock}
+  <div class="rfoot">本报告由声学工作台生成 · 结果为工程估算，不替代计量资质或正式检测 · ${dateStr}</div>
+</body></html>`;
+}
+function exportReport(cfg){
+  const html=buildReportHTML(cfg);
+  const w=window.open('','_blank');
+  if(!w){alert('请允许弹出窗口以查看报告。');return;}
+  w.document.write(html);
+  // 注入操作栏
+  const bar=w.document.createElement('div');
+  bar.className='noprint';
+  bar.style.cssText='position:fixed;top:0;left:0;right:0;background:#0fb58e;padding:10px 16px;display:flex;gap:10px;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:99';
+  bar.innerHTML='<button id="_pr" style="background:#fff;color:#0a7d63;border:none;padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">🖨 打印 / 存 PDF</button>'
+    +'<button id="_dl" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid #fff;padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">⬇ 下载 HTML</button>';
+  w.document.body.insertBefore(bar,w.document.body.firstChild);
+  w.document.body.style.paddingTop='56px';
+  const fname=(cfg.title.replace(/[\\/:*?"<>|\s]/g,'_'))+'_'+new Date().toISOString().slice(0,10);
+  w.document.getElementById('_pr').onclick=()=>w.print();
+  w.document.getElementById('_dl').onclick=()=>{
+    const blob=new Blob([html],{type:'text/html'});const a=w.document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=fname+'.html';a.click();
+  };
+}
+// 取某 SVG 元素的外层 HTML（用于嵌入报告）
+function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
+</script>
+<script>
+/* ============ 分贝运算 / 单位换算 ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  const P0=20e-6;
+  let dbVals=[78,75,72], dbCalcMode='sum';
+
+  window.renderDb=function(){
+    const list=$('dbList');list.innerHTML='';
+    dbVals.forEach((v,i)=>{
+      const r=document.createElement('div');r.className='levelrow';
+      r.innerHTML=`<input type="number" value="${v}" oninput="dbVals[${i}]=parseFloat(this.value)||0;calcDb()">
+        <button class="del" onclick="dbVals.splice(${i},1);renderDb();calcDb()">×</button>`;
+      list.appendChild(r);
+    });
+  };
+  window.addDb=function(){dbVals.push(70);renderDb();calcDb();};
+  window.dbMode=function(m,b){dbCalcMode=m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.remove('on'));b.classList.add('on');calcDb();};
+  window.calcDb=function(){
+    if(!dbVals.length){$('dbOut').textContent='— dB';return;}
+    const sum=dbVals.reduce((s,v)=>s+Math.pow(10,v/10),0);
+    const L= dbCalcMode==='sum' ? 10*log10(sum) : 10*log10(sum/dbVals.length);
+    $('dbLbl').textContent= dbCalcMode==='sum' ? '合计声压级（能量叠加）' : '能量平均声压级 Leq';
+    $('dbOut').textContent=fmt(L,1)+' dB';
+  };
+  window.calcBg=function(){
+    const Lt=parseFloat($('bgTotal').value), Lb=parseFloat($('bgNoise').value);
+    const diff=Lt-Lb;
+    if(diff<=0){$('bgOut').textContent='—';$('bgNote').textContent='总值需大于背景值';return;}
+    if(diff<0.5){$('bgOut').textContent='不可测';$('bgNote').textContent='差值过小，声源被背景完全掩盖';return;}
+    const Ls=10*log10(Math.pow(10,Lt/10)-Math.pow(10,Lb/10));
+    $('bgOut').textContent=fmt(Ls,1)+' dB';
+    $('bgNote').textContent= diff<3 ? `差值 ${fmt(diff,1)}dB（&lt;3dB，按 ISO 1996 结果不可靠，仅供参考）`
+      : diff>10 ? `差值 ${fmt(diff,1)}dB（&gt;10dB，背景影响可忽略）`
+      : `差值 ${fmt(diff,1)}dB（修正量 ${fmt(Lt-Ls,1)}dB）`;
+  };
+
+  window.paToDb=function(){const p=parseFloat($('c_pa').value);if(p>0)$('c_db').value=fmt(20*log10(p/P0),1);};
+  window.dbToPa=function(){const d=parseFloat($('c_db').value);$('c_pa').value=fmt(P0*Math.pow(10,d/20),5);};
+
+  // 友好科学计数法：把数字显示成 "1.2×10⁻⁶"；解析时兼容 "1.2×10⁻⁶"、"1.2e-6"、"0.0000012"
+  const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  function toSci(x){
+    if(x===0)return '0';
+    const exp=Math.floor(Math.log10(Math.abs(x)));
+    const mant=x/Math.pow(10,exp);
+    const supExp=String(exp).split('').map(c=>SUP[c]||c).join('');
+    return fmt(mant,2)+'×10'+supExp;
+  }
+  function parseSci(str){
+    if(str==null)return NaN;
+    let s=String(str).trim();
+    // 上标转普通：⁻⁶ -> -6
+    const INV={'⁻':'-','⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9'};
+    s=s.replace(/[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]/g,c=>INV[c]);
+    s=s.replace(/×10/,'e').replace(/x10/i,'e').replace(/·10/,'e').replace(/\*10/,'e');
+    s=s.replace(/\^/,'');
+    return parseFloat(s);
+  }
+
+  window.intToDb=function(){const I=parseSci($('c_I').value);if(I>0)$('c_LI').value=fmt(10*log10(I/1e-12),1);};
+  window.dbToInt=function(){const d=parseFloat($('c_LI').value);$('c_I').value=toSci(1e-12*Math.pow(10,d/10));};
+  window.powToDb=function(){const W=parseSci($('c_W').value);if(W>0)$('c_LW').value=fmt(10*log10(W/1e-12),1);};
+  window.dbToPow=function(){const d=parseFloat($('c_LW').value);$('c_W').value=toSci(1e-12*Math.pow(10,d/10));};
+
+  // 声强级↔声功率级（经测量面积 S）：LW = LI + 10log(S)
+  function cvUpdHint(){
+    const S=parseFloat($('cv_S').value);
+    $('cv_hint').textContent=`修正量 10·log₁₀(${fmt(S,2)}) = ${fmt(10*log10(S),1)} dB；即声功率级比面平均声强级高 ${fmt(10*log10(S),1)} dB。`;
+  }
+  window.cvFromLI=function(){
+    const LI=parseFloat($('cv_LI').value), S=parseFloat($('cv_S').value);
+    if(S>0)$('cv_LW').value=fmt(LI+10*log10(S),1);
+    cvUpdHint();
+  };
+  window.cvFromLW=function(){
+    const LW=parseFloat($('cv_LW').value), S=parseFloat($('cv_S').value);
+    if(S>0)$('cv_LI').value=fmt(LW-10*log10(S),1);
+    cvUpdHint();
+  };
+  window.cvSetS=function(s){$('cv_S').value=s;cvFromLI();};
+
+  // 声压级↔声功率级（含声场环境Q与距离r）：Lp = Lw - 10log(4πr²/Q)
+  let swQ=1;
+  function swSurfaceTerm(){
+    const r=parseFloat($('sw_r').value);
+    return 10*log10(4*Math.PI*r*r/swQ); // 10log(S有效)
+  }
+  function swUpdHint(){
+    const r=parseFloat($('sw_r').value);
+    const S=4*Math.PI*r*r/swQ;
+    const envNm={1:'自由场',2:'半自由场',4:'二面角',8:'三面角'}[swQ];
+    $('sw_hint').textContent=`${envNm}：等效辐射面积 S = 4π·${fmt(r,1)}²/${swQ} = ${fmt(S,2)} m²，衰减量 10·log₁₀(S) = ${fmt(swSurfaceTerm(),1)} dB（声压级比声功率级低这么多）。`;
+  }
+  window.swFromLW=function(){
+    const LW=parseFloat($('sw_LW').value);
+    $('sw_Lp').value=fmt(LW-swSurfaceTerm(),1);
+    swUpdHint();
+  };
+  window.swFromLp=function(){
+    const Lp=parseFloat($('sw_Lp').value);
+    $('sw_LW').value=fmt(Lp+swSurfaceTerm(),1);
+    swUpdHint();
+  };
+  window.swSetQ=function(q,btn){
+    swQ=q;
+    document.querySelectorAll('#sw_envSeg button').forEach(x=>x.classList.remove('on'));
+    if(btn)btn.classList.add('on');
+    swFromLW();
+  };
+
+  window.pctToDb=function(){const p=parseFloat($('c_pct').value);if(p>0)$('c_dbr').value=fmt(20*log10(p/100),2);};
+  window.dbToPct=function(){const d=parseFloat($('c_dbr').value);$('c_pct').value=fmt(100*Math.pow(10,d/20),2);};
+
+  // ===== 传声器灵敏度 ↔ 电压 =====
+  function micSensV(){const mv=parseFloat($('mic_mv').value);return (isFinite(mv)&&mv>0)?mv/1000:NaN;} // V/Pa
+  function micUbarNote(){
+    const db=parseFloat($('mic_dbv').value);
+    $('mic_ubarNote').innerHTML= isFinite(db)
+      ? `等效 <b>${fmt(db-20,1)} dB re 1V/µbar</b>（旧单位，1 µbar=0.1 Pa，低 20 dB）`
+      : '';
+  }
+  function micShowOut(Vout,pPa){
+    if(!isFinite(Vout)){['mic_voutBig','mic_dbv_out','mic_pa'].forEach(id=>$(id).textContent='—');return;}
+    if(Math.abs(Vout)<1){$('mic_voutBig').textContent=fmt(Vout*1000,3);$('mic_voutU').textContent='mVrms';}
+    else{$('mic_voutBig').textContent=fmt(Vout,4);$('mic_voutU').textContent='Vrms';}
+    $('mic_dbv_out').textContent=fmt(20*log10(Math.abs(Vout)),1);
+    $('mic_pa').textContent=fmt(pPa,4);
+  }
+  window.micFromMv=function(){const mv=parseFloat($('mic_mv').value);if(isFinite(mv)&&mv>0)$('mic_dbv').value=fmt(20*log10(mv/1000),1);micUbarNote();micFromSPL();};
+  window.micFromDb=function(){const db=parseFloat($('mic_dbv').value);if(isFinite(db))$('mic_mv').value=fmt(Math.pow(10,db/20)*1000,3);micUbarNote();micFromSPL();};
+  window.micSetSens=function(mv){$('mic_mv').value=mv;micFromMv();};
+  window.micFromSPL=function(){
+    const S=micSensV(),spl=parseFloat($('mic_spl').value),g=parseFloat($('mic_gain').value)||0;
+    if(!isFinite(S)||!isFinite(spl)){micShowOut(NaN);return;}
+    const p=P0*Math.pow(10,spl/20);          // 声压 Pa
+    const Vout=S*p*Math.pow(10,g/20);         // 输出电压 V
+    $('mic_vout').value=fmt(Vout*1000,4);
+    micShowOut(Vout,p);
+    $('mic_hint').innerHTML=`输出 = 灵敏度 × 声压 × 增益 = ${fmt(S*1000,2)} mV/Pa × ${fmt(p,4)} Pa × ${fmt(Math.pow(10,g/20),3)} = ${fmt(Vout*1000,3)} mVrms（${fmt(20*log10(Math.abs(Vout)),1)} dBV）。`;
+  };
+  window.micFromVout=function(){
+    const S=micSensV(),g=parseFloat($('mic_gain').value)||0,voutmV=parseFloat($('mic_vout').value);
+    if(!isFinite(S)||!isFinite(voutmV)||voutmV<=0)return;
+    const Vout=voutmV/1000, p=Vout/(S*Math.pow(10,g/20));
+    if(p>0){const spl=20*log10(p/P0);$('mic_spl').value=fmt(spl,1);micShowOut(Vout,p);
+      $('mic_hint').innerHTML=`反推：声压 = 电压 /(灵敏度×增益) = ${fmt(p,4)} Pa → SPL ${fmt(spl,1)} dB。`;}
+  };
+
+  // 子标签切换
+  document.querySelectorAll('#ud-tabs .tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('#ud-tabs .tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('#mod-unitdb .panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');document.querySelector(`#mod-unitdb .panel[data-p="${t.dataset.t}"]`).classList.add('active');
+  });
+
+  // init
+  renderDb();calcDb();calcBg();
+  paToDb();dbToInt();dbToPow();pctToDb();cvFromLI();swFromLW();
+  micFromMv();
+})();
+
+/* ============ 声压级热力图（支持分倍频） ============ */
+(function(){
+  const BANDS=[125,250,500,1000,2000,4000];
+  const BAND_KEYS=['total',...BANDS]; // 'total'=不分频/总值
+  let pts=[]; // {col,row,bands:{total,125,250,...}}
+  let curBand='total';
+  function nx(){return parseInt($('hm_nx').value)||2;}
+  function ny(){return parseInt($('hm_ny').value)||2;}
+  function getV(p,band){return p.bands[band]!=null?p.bands[band]:null;}
+  function setV(p,band,val){p.bands[band]=val;}
+
+  function buildBandSeg(){
+    const seg=$('hm_bandSeg');
+    seg.innerHTML=BAND_KEYS.map(b=>{
+      const label=b==='total'?'总值/不分频':(b>=1000?(b/1000)+'k':b)+' Hz';
+      return `<button class="${b==curBand?'on':''}" onclick="hmSetBand('${b}',this)">${label}</button>`;
+    }).join('');
+  }
+  window.hmSetBand=function(b,btn){
+    curBand= (b==='total')?'total':parseFloat(b);
+    document.querySelectorAll('#hm_bandSeg button').forEach(x=>x.classList.remove('on'));
+    if(btn)btn.classList.add('on');
+    hmFillTableFromData();
+    hmDraw();
+  };
+
+  window.hmRebuild=function(){
+    const c=nx(),r=ny();
+    const old={};pts.forEach(p=>old[p.col+'_'+p.row]=p.bands);
+    pts=[];
+    for(let j=0;j<r;j++)for(let i=0;i<c;i++){
+      const key=i+'_'+j;
+      pts.push({col:i,row:j,bands: old[key]? old[key] : {total:null}});
+    }
+    const t=$('hmTable');let head='<thead><tr><th>行\\列</th>';
+    for(let i=0;i<c;i++)head+=`<th>C${i+1}</th>`;head+='</tr></thead><tbody>';
+    let body='';
+    for(let j=0;j<r;j++){
+      body+=`<tr><td>R${j+1}</td>`;
+      for(let i=0;i<c;i++){const p=pts.find(x=>x.col===i&&x.row===j);
+        const v=getV(p,curBand);
+        body+=`<td><input type="number" data-c="${i}" data-r="${j}" value="${v!=null?v:''}" oninput="hmSet(${i},${j},this.value)"></td>`;}
+      body+='</tr>';
+    }
+    t.innerHTML=head+body+'</tbody>';
+    buildBandSeg();
+    hmDraw();
+  };
+  function hmFillTableFromData(){
+    document.querySelectorAll('#hmTable input').forEach(inp=>{
+      const i=parseInt(inp.dataset.c),j=parseInt(inp.dataset.r);
+      const p=pts.find(x=>x.col===i&&x.row===j);
+      const v=p?getV(p,curBand):null;
+      inp.value=v!=null?v:'';
+    });
+  }
+  window.hmSet=function(i,j,val){const p=pts.find(x=>x.col===i&&x.row===j);if(p)setV(p,curBand,val===''?null:parseFloat(val));hmDraw();};
+  window.hmClear=function(){pts.forEach(p=>setV(p,curBand,null));hmFillTableFromData();hmDraw();};
+  window.hmClearAll=function(){pts.forEach(p=>p.bands={total:null});hmFillTableFromData();hmDraw();};
+  window.hmDemo=function(){
+    const c=nx(),r=ny();
+    const baseByBand={total:85,125:82,250:84,500:83,1000:80,2000:76,4000:70};
+    pts.forEach(p=>{
+      const dx=(p.col-(c-1))/c, dy=(p.row-0)/r;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      const noise=(p.col*7+p.row*13)%5-2;
+      BAND_KEYS.forEach(b=>{
+        const base=baseByBand[b];
+        p.bands[b]=Math.round((base-22*d+noise)*10)/10;
+      });
+    });
+    hmFillTableFromData();hmDraw();
+  };
+
+  /* ===== 批量粘贴导入 ===== */
+  window.hmPasteToggle=function(){
+    const box=$('hm_pasteBox');box.style.display=(box.style.display==='none')?'block':'none';
+    $('hm_pasteMsg').textContent='';
+  };
+  window.hmPasteApply=function(){
+    const text=$('hm_pasteArea').value;
+    const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+    if(!lines.length){$('hm_pasteMsg').textContent='未检测到数据。';return;}
+    const c=nx(),r=ny();
+    let filled=0, badRows=0;
+    const ordered=[];for(let j=0;j<r;j++)for(let i=0;i<c;i++)ordered.push(pts.find(x=>x.col===i&&x.row===j));
+    lines.forEach((line,idx)=>{
+      if(idx>=ordered.length)return;
+      const nums=line.split(/[\t,，\s]+/).map(s=>parseFloat(s)).filter(n=>!isNaN(n));
+      if(!nums.length){badRows++;return;}
+      const p=ordered[idx];
+      if(nums.length>=BANDS.length){
+        BANDS.forEach((b,bi)=>p.bands[b]=nums[bi]);
+        p.bands.total= nums.length>BANDS.length ? nums[BANDS.length] : 10*Math.log10(BANDS.reduce((s,b)=>s+Math.pow(10,p.bands[b]/10),0));
+      }else{
+        p.bands.total=nums[0];
+      }
+      filled++;
+    });
+    $('hm_pasteMsg').textContent=`已解析 ${filled} 行测点数据${badRows?`，${badRows} 行无法识别已跳过`:''}。`;
+    hmFillTableFromData();hmDraw();
+  };
+
+  $('hm_scale').onchange=function(){
+    const fixed=this.value==='fixed';
+    $('hm_minWrap').style.display=fixed?'block':'none';
+    $('hm_maxWrap').style.display=fixed?'block':'none';
+    hmDraw();
+  };
+
+  function colorFor(t){
+    t=Math.max(0,Math.min(1,t));
+    const stops=[[0,[40,90,200]],[0.25,[30,170,180]],[0.5,[90,200,90]],[0.75,[240,210,50]],[1,[220,55,40]]];
+    for(let i=0;i<stops.length-1;i++){
+      if(t>=stops[i][0]&&t<=stops[i+1][0]){
+        const f=(t-stops[i][0])/(stops[i+1][0]-stops[i][0]);
+        const a=stops[i][1],b=stops[i+1][1];
+        return `rgb(${Math.round(a[0]+(b[0]-a[0])*f)},${Math.round(a[1]+(b[1]-a[1])*f)},${Math.round(a[2]+(b[2]-a[2])*f)})`;
+      }
+    }
+    return 'rgb(220,55,40)';
+  }
+
+  function idw(gx,gy,known){
+    let num=0,den=0;
+    for(const k of known){
+      const dx=gx-k.x,dy=gy-k.y,d2=dx*dx+dy*dy;
+      if(d2<1e-9)return k.v;
+      const w=1/Math.pow(d2,1.4); num+=w*k.v;den+=w;
+    }
+    return den>0?num/den:null;
+  }
+  function bilinear(fx,fy,grid,c,r){
+    const x=fx*(c-1),y=fy*(r-1);
+    const x0=Math.floor(x),y0=Math.floor(y),x1=Math.min(x0+1,c-1),y1=Math.min(y0+1,r-1);
+    const tx=x-x0,ty=y-y0;
+    const g=(i,j)=>{const p=grid[j*c+i];return p!=null?p:null;};
+    const v00=g(x0,y0),v10=g(x1,y0),v01=g(x0,y1),v11=g(x1,y1);
+    if([v00,v10,v01,v11].some(v=>v==null))return null;
+    return v00*(1-tx)*(1-ty)+v10*tx*(1-ty)+v01*(1-tx)*ty+v11*tx*ty;
+  }
+
+  function msSegs(a,b,c,d,lvl,xi,yi){
+    const segs=[];
+    const interpEdge=(v1,v2)=>(lvl-v1)/(v2-v1);
+    const top=()=>[xi+interpEdge(a,b),yi];
+    const right=()=>[xi+1,yi+interpEdge(b,c)];
+    const bottom=()=>[xi+interpEdge(d,c),yi+1];
+    const left=()=>[xi,yi+interpEdge(a,d)];
+    let idx=(a>lvl?8:0)|(b>lvl?4:0)|(c>lvl?2:0)|(d>lvl?1:0);
+    const E={t:top,r:right,b:bottom,l:left};
+    const cases={1:[['l','b']],2:[['b','r']],3:[['l','r']],4:[['t','r']],5:[['t','l'],['b','r']],
+      6:[['t','b']],7:[['t','l']],8:[['t','l']],9:[['t','b']],10:[['t','r'],['l','b']],
+      11:[['t','r']],12:[['l','r']],13:[['b','r']],14:[['l','b']]};
+    (cases[idx]||[]).forEach(pair=>{const p1=E[pair[0]](),p2=E[pair[1]]();segs.push([p1[0],p1[1],p2[0],p2[1]]);});
+    return segs;
+  }
+
+  window.hmDraw=function(){
+    const c=nx(),r=ny();
+    const known=pts.filter(p=>getV(p,curBand)!=null).map(p=>({x:p.col/(c-1||1),y:p.row/(r-1||1),v:getV(p,curBand),col:p.col,row:p.row}));
+    const vals=known.map(k=>k.v);
+    if(vals.length){
+      const vmax=Math.max(...vals),vmin=Math.min(...vals);
+      const leq=10*Math.log10(vals.reduce((a,v)=>a+Math.pow(10,v/10),0)/vals.length);
+      $('hm_vmax').textContent=fmt(vmax,1);$('hm_vmin').textContent=fmt(vmin,1);
+      $('hm_leq').textContent=fmt(leq,1);$('hm_range').textContent=fmt(vmax-vmin,1);
+    }else{['hm_vmax','hm_vmin','hm_leq','hm_range'].forEach(id=>$(id).textContent='—');}
+
+    const W=720,H=540,mL=40,mR=80,mT=20,mB=40,pw=W-mL-mR,ph=H-mT-mB;
+    let s='';
+    if(!vals.length){
+      s=`<text x="${W/2}" y="${H/2}" font-size="14" fill="#9bb0ba" text-anchor="middle">请在上方表格填入测点声压级</text>`;
+      $('hmCanvas').innerHTML=s;return;
+    }
+    let lo,hi;
+    if($('hm_scale').value==='fixed'){lo=parseFloat($('hm_min').value);hi=parseFloat($('hm_max').value);}
+    else{lo=Math.min(...vals);hi=Math.max(...vals);}
+    if(hi-lo<1e-6)hi=lo+1;
+    const norm=v=>(v-lo)/(hi-lo);
+    const interp=$('hm_interp').value;
+    const gridRM=new Array(c*r).fill(null);
+    pts.forEach(p=>gridRM[p.row*c+p.col]=getV(p,curBand));
+
+    if(interp==='none'){
+      const cw=pw/c,chh=ph/r;
+      pts.forEach(p=>{
+        const v=getV(p,curBand);if(v==null)return;
+        const x=mL+p.col*cw+cw*0.1,y=mT+p.row*chh+chh*0.1;
+        s+=`<rect x="${x}" y="${y}" width="${cw*0.8}" height="${chh*0.8}" rx="6" fill="${colorFor(norm(v))}"/>`;
+      });
+    }else{
+      const RES=48;
+      const cellW=pw/RES, RESY=Math.round(RES*ph/pw), cellH=ph/RESY;
+      for(let yi=0;yi<RESY;yi++){
+        for(let xi=0;xi<RES;xi++){
+          const fx=xi/(RES-1),fy=yi/(RESY-1);
+          let v;
+          if(interp==='bilinear'){v=bilinear(fx,fy,gridRM,c,r);if(v==null)v=idw(fx,fy,known);}
+          else v=idw(fx,fy,known);
+          if(v==null)continue;
+          s+=`<rect x="${(mL+xi*cellW).toFixed(1)}" y="${(mT+yi*cellH).toFixed(1)}" width="${cellW.toFixed(1)}" height="${cellH.toFixed(1)}" fill="${colorFor(norm(v))}"/>`;
+        }
+      }
+    }
+    s+=`<rect x="${mL}" y="${mT}" width="${pw}" height="${ph}" fill="none" stroke="#c9d6dc" stroke-width="1"/>`;
+    if($('hm_contour')&&$('hm_contour').value==='yes'&&interp!=='none'){
+      const GX=40, GY=Math.round(40*ph/pw);
+      const F=[];
+      for(let yi=0;yi<=GY;yi++){const row=[];for(let xi=0;xi<=GX;xi++){
+        const fx=xi/GX,fy=yi/GY;
+        let v=(interp==='bilinear')?(bilinear(fx,fy,gridRM,c,r)??idw(fx,fy,known)):idw(fx,fy,known);
+        row.push(v);
+      }F.push(row);}
+      const gx=xi=>mL+xi/GX*pw, gy=yi=>mT+yi/GY*ph;
+      const range=hi-lo;const stepDb= range>30?10:range>15?5:range>6?2:1;
+      let lines='';
+      for(let lvl=Math.ceil(lo/stepDb)*stepDb; lvl<hi; lvl+=stepDb){
+        for(let yi=0;yi<GY;yi++)for(let xi=0;xi<GX;xi++){
+          const a=F[yi][xi],b=F[yi][xi+1],cc=F[yi+1][xi+1],dd=F[yi+1][xi];
+          if(a==null||b==null||cc==null||dd==null)continue;
+          const segs=msSegs(a,b,cc,dd,lvl,xi,yi);
+          segs.forEach(seg=>{lines+=`<line x1="${gx(seg[0]).toFixed(1)}" y1="${gy(seg[1]).toFixed(1)}" x2="${gx(seg[2]).toFixed(1)}" y2="${gy(seg[3]).toFixed(1)}" stroke="rgba(255,255,255,.55)" stroke-width="1"/>`;});
+        }
+      }
+      s+=lines;
+    }
+    const showVal=$('hm_showval').value==='yes';
+    pts.forEach(p=>{
+      const v=getV(p,curBand);if(v==null)return;
+      const x= (c>1)? mL+p.col*pw/(c-1) : mL+pw/2;
+      const y= (r>1)? mT+p.row*ph/(r-1) : mT+ph/2;
+      s+=`<circle cx="${x}" cy="${y}" r="3" fill="#fff" stroke="#1c2b33" stroke-width="1"/>`;
+      if(showVal)s+=`<text x="${x}" y="${y-7}" font-size="10" fill="#1c2b33" text-anchor="middle" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="2.5">${fmt(v,0)}</text>`;
+    });
+    s+=`<text x="${mL+pw/2}" y="${H-8}" font-size="11" fill="#67808c" text-anchor="middle">X = ${$('hm_w').value} m</text>`;
+    s+=`<text x="14" y="${mT+ph/2}" font-size="11" fill="#67808c" text-anchor="middle" transform="rotate(-90 14 ${mT+ph/2})">Y = ${$('hm_h').value} m</text>`;
+    const bandLbl=curBand==='total'?'总值/不分频':(curBand>=1000?(curBand/1000)+'k':curBand)+' Hz';
+    s+=`<text x="${mL+6}" y="${mT+14}" font-size="12" fill="#fff" font-weight="700" paint-order="stroke" stroke="rgba(0,0,0,.35)" stroke-width="3">${bandLbl}</text>`;
+    const cbX=W-mR+24,cbY=mT,cbW=16,cbH=ph;
+    const N=40;
+    for(let i=0;i<N;i++){
+      const t=1-i/(N-1);
+      s+=`<rect x="${cbX}" y="${(cbY+cbH*i/N).toFixed(1)}" width="${cbW}" height="${(cbH/N+0.5).toFixed(1)}" fill="${colorFor(t)}"/>`;
+    }
+    s+=`<rect x="${cbX}" y="${cbY}" width="${cbW}" height="${cbH}" fill="none" stroke="#c9d6dc" stroke-width="1"/>`;
+    s+=`<text x="${cbX+cbW+4}" y="${cbY+8}" font-size="10" fill="#67808c">${fmt(hi,1)}</text>`;
+    s+=`<text x="${cbX+cbW+4}" y="${cbY+cbH}" font-size="10" fill="#67808c">${fmt(lo,1)}</text>`;
+    s+=`<text x="${cbX+cbW+4}" y="${cbY+cbH/2}" font-size="10" fill="#67808c">dB</text>`;
+    $('hmCanvas').innerHTML=s;
+  };
+
+  hmRebuild();hmDemo();
+
+  window.hmExport=function(){
+    const bandLbl=curBand==='total'?'总值/不分频':(curBand>=1000?(curBand/1000)+'k':curBand)+' Hz';
+    exportReport({
+      title:'声压级热力图报告（'+bandLbl+'）',
+      inputs:[['测量区域',$('hm_w').value+' × '+$('hm_h').value+' m'],['网格',$('hm_nx').value+' 列 × '+$('hm_ny').value+' 行'],['当前频带',bandLbl],['插值方式',$('hm_interp').options[$('hm_interp').selectedIndex].text]],
+      results:[['最大声压级',$('hm_vmax').textContent,'dB'],['最小声压级',$('hm_vmin').textContent,'dB'],['能量平均 Leq',$('hm_leq').textContent,'dB'],['极差（不均匀度）',$('hm_range').textContent,'dB']],
+      svg:grabSVG('hmCanvas'),
+      notes:'颜色由蓝（低）经绿黄到红（高）。插值仅为可视化估计，非测量值。每点可记录125–4000Hz六个倍频带，可在上方切换查看。'
+    });
+  };
+})();
+
+/* ============ 直达声场 / 阵列模拟 ============ */
+(function(){
+  const C=343;
+  const $=id=>document.getElementById(id);
+  let multiSrc=[{x:-1.5,y:0},{x:1.5,y:0}];
+
+  function kOf(){return 2*Math.PI*parseFloat($('ds_f').value)/C;}
+
+  // 栅瓣出现的临界间距：偏转阵列须 d < λ/(1+|sinθ|)（任意偏转最严格为 λ/2）；
+  // 静态宽边阵（未偏转）主瓣在法向，栅瓣要 d ≥ λ 才出现。区分二者，避免对静态阵过度报警。
+  function gratingThreshold(type,lambda){
+    if(type==='phased'){
+      const st=Math.abs(Math.sin(parseFloat($('ds_steer').value)*Math.PI/180));
+      return lambda/(1+st);
+    }
+    return lambda; // line / curve / focus 等静态宽边阵
+  }
+
+  // 生成当前配置的单元数组 [{x,y,amp,phase}]
+  function buildUnits(){
+    const type=$('ds_type').value, k=kOf();
+    const N=parseInt($('ds_N').value), d=parseFloat($('ds_d').value);
+    let units;
+    if(type==='single')units=[{x:0,y:0,amp:1,phase:0}];
+    else if(type==='multi')return multiSrc.map(s=>({x:s.x,y:s.y,amp:1,phase:0})); // 用户手动摆放，不自动平移
+    else if(type==='line'){
+      units=[];for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;units.push({x,y:0,amp:1,phase:0});}
+    }
+    else if(type==='phased'){
+      const st=parseFloat($('ds_steer').value)*Math.PI/180;units=[];
+      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;units.push({x,y:0,amp:1,phase:-k*x*Math.sin(st)});}
+    }
+    else if(type==='curve'){
+      const includedAngle=parseFloat($('ds_curve').value);
+      const shape=$('ds_curveShape')?$('ds_curveShape').value:'arc';
+      units=[];
+      if(shape==='j'){
+        // J形：上部直段 + 下部弧段。直段单元数按占比分配
+        const straightPct=parseFloat($('ds_jStraight').value)/100;
+        const nStraight=Math.max(1,Math.round(N*straightPct));
+        const nArc=N-nStraight;
+        let x=0,y=0,ang=0;
+        // 直段（ang=0，沿+x方向逐个排）
+        for(let i=0;i<nStraight;i++){units.push({x,y,amp:1,phase:0});x+=d;}
+        // 弧段：在直段末端继续，逐单元增加splay，弧段承担全部included angle
+        const splay=nArc>0?includedAngle*Math.PI/180/nArc:0;
+        for(let i=0;i<nArc;i++){ang+=splay;x+=d*Math.cos(ang);y-=d*Math.sin(ang);units.push({x,y,amp:1,phase:0});}
+      }else{
+        // 纯弧形：N单元恒定曲率。included angle = 首尾单元朝向夹角 = splay×(N-1)
+        // 用弧的极角参数化，保证关于y轴严格对称
+        const splay=N>1?includedAngle/(N-1):0; // 度
+        const radius=(splay!==0)?(d/(2*Math.sin(splay*Math.PI/360))):1e9; // 由弦长d与splay反推弧半径
+        for(let i=0;i<N;i++){
+          const a=(-(includedAngle/2)+i*splay)*Math.PI/180; // 该单元法线方向相对中心
+          // 弧上单元位置：圆心在(0, radius)下方，单元沿圆周分布
+          units.push({x:radius*Math.sin(a), y:radius*(1-Math.cos(a)), amp:1, phase:0});
+        }
+      }
+      const cx=units.reduce((s,p)=>s+p.x,0)/N;units.forEach(p=>p.x-=cx);
+    }
+    else if(type==='focus'){
+      const fd=parseFloat($('ds_fd').value),fx=parseFloat($('ds_fx').value);units=[];
+      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;const rf=Math.sqrt((fx-x)**2+fd**2);units.push({x,y:0,amp:1,phase:k*rf});}
+    }
+    else if(type==='dfat'){
+      const layout=$('ds_dfatLayout')?$('ds_dfatLayout').value:'flatPlane';
+      const R=parseFloat($('ds_ringR').value);
+      const dd=d; units=[];
+      if(layout==='flatPlane'){
+        // 单排平面：扬声器在测试件前方一个平面(y=0)，等间距
+        for(let i=0;i<N;i++)units.push({x:(i-(N-1)/2)*dd,y:0,amp:1,phase:0});
+      }else if(layout==='arcPlane'){
+        // 弧形平面：扬声器沿凹弧排布(弧朝测试件)
+        const inc=parseFloat($('ds_arcInc').value);
+        const splay=N>1?inc/(N-1):0;
+        const radius=(splay!==0)?(dd/(2*Math.sin(splay*Math.PI/360))):1e9;
+        for(let i=0;i<N;i++){const a=(-(inc/2)+i*splay)*Math.PI/180;units.push({x:radius*Math.sin(a),y:radius*(1-Math.cos(a)),amp:1,phase:0});}
+        const cx=units.reduce((s,p)=>s+p.x,0)/N;units.forEach(p=>p.x-=cx);
+      }else if(layout==='flat3d'){
+        // 平面三维：行×列网格(在2D切面上各行投影到不同y表示纵深层)
+        const rows=parseInt($('ds_rows').value);
+        for(let r=0;r<rows;r++)for(let i=0;i<N;i++){
+          units.push({x:(i-(N-1)/2)*dd, y:r*dd*0.8, amp:1, phase:0});
+        }
+      }else if(layout==='arc3d'){
+        // 弧形三维：每行是一条弧，多行沿纵深叠加
+        const rows=parseInt($('ds_rows').value);
+        const inc=parseFloat($('ds_arcInc').value);
+        const splay=N>1?inc/(N-1):0;
+        const radius=(splay!==0)?(dd/(2*Math.sin(splay*Math.PI/360))):1e9;
+        for(let r=0;r<rows;r++)for(let i=0;i<N;i++){
+          const a=(-(inc/2)+i*splay)*Math.PI/180;
+          units.push({x:radius*Math.sin(a), y:radius*(1-Math.cos(a))+r*dd*0.8, amp:1, phase:0});
+        }
+        const cx=units.reduce((s,p)=>s+p.x,0)/units.length;units.forEach(p=>p.x-=cx);
+      }
+    }
+    else units=[{x:0,y:0,amp:1,phase:0}];
+    // 归一化：阵列可能因弧度/聚焦朝任意方向延伸（如J型阵列大幅下垂到y<0），
+    // 统一平移使阵列包络框的上边缘贴合声场可视区域起始边（留一点边距），确保整个阵列形状都在画布内可见
+    const margin = (type==='dfat') ? Math.max(0.15, d*0.6) : Math.max(0.1, d*0.6);
+    const minY=Math.min(...units.map(u=>u.y));
+    if(minY<margin){const shift=margin-minY;units.forEach(u=>u.y+=shift);}
+    return units;
+  }
+
+  // 阵列在y方向的总跨度（含单声源/多声源时返回0），用于自动校验显示范围是否够大
+  function unitsYSpan(units){
+    if(units.length<2)return 0;
+    const ys=units.map(u=>u.y);return Math.max(...ys)-Math.min(...ys);
+  }
+  function unitsXSpan(units){
+    if(units.length<2)return 0;
+    const xs=units.map(u=>u.x);return Math.max(...xs)-Math.min(...xs);
+  }
+
+  // 某点复数声压幅值（与相位）
+  function fieldAt(units,k,px,py){
+    let re=0,im=0;
+    for(const u of units){
+      const r=Math.max(0.03,Math.sqrt((px-u.x)**2+(py-u.y)**2));
+      const ph=-k*r+u.phase, a=u.amp/r;
+      re+=a*Math.cos(ph); im+=a*Math.sin(ph);
+    }
+    return {amp:Math.sqrt(re*re+im*im),re,im};
+  }
+
+  /* ===== 类型切换显示对应参数 ===== */
+  window.dsTypeChange=function(){
+    const t=$('ds_type').value;
+    $('ds_arrayBox').style.display=['line','curve','focus','phased','dfat'].includes(t)?'block':'none';
+    $('ds_steerBox').style.display=(t==='phased')?'block':'none';
+    $('ds_curveBox').style.display=(t==='curve')?'block':'none';
+    $('ds_focusBox').style.display=(t==='focus')?'block':'none';
+    $('ds_ringBox').style.display=(t==='dfat')?'block':'none';
+    $('ds_multiBox').style.display=(t==='multi')?'block':'none';
+    $('ds_dfatCard').style.display=(t==='dfat')?'block':'none';
+    if(t==='dfat'){dsDfatLayoutUpd();dsRingUpd();}
+    dsRender();
+  };
+  window.dsDfatLayoutUpd=function(){
+    const layout=$('ds_dfatLayout')?$('ds_dfatLayout').value:'flatPlane';
+    if($('ds_arcIncBox'))$('ds_arcIncBox').style.display=(layout==='arcPlane'||layout==='arc3d')?'block':'none';
+    if($('ds_3dRowBox'))$('ds_3dRowBox').style.display=(layout==='flat3d'||layout==='arc3d')?'block':'none';
+  };
+  window.dsClearSrc=function(){multiSrc=[];dsRender();};
+  window.dsRingUpd=function(){
+    $('ds_ringRLbl').textContent=fmt(parseFloat($('ds_ringR').value),1);
+    $('ds_twLbl').textContent=fmt(parseFloat($('ds_tw').value),1);
+    $('ds_thLbl').textContent=fmt(parseFloat($('ds_th').value),1);
+    if($('ds_arcIncLbl'))$('ds_arcIncLbl').textContent=$('ds_arcInc').value;
+    if($('ds_rowsLbl'))$('ds_rowsLbl').textContent=$('ds_rows').value;
+  };
+
+  /* ===== 主渲染（rAF 合并，避免拖动滑块时每次输入都全量重算）===== */
+  let dsRenderRaf=null;
+  window.dsRender=function(){
+    if(dsRenderRaf)return;
+    dsRenderRaf=requestAnimationFrame(()=>{dsRenderRaf=null;dsRenderCore();});
+  };
+  function dsRenderCore(){
+    // 标签更新
+    const f=parseFloat($('ds_f').value);
+    $('ds_fLbl').textContent=f;$('ds_wl').textContent=fmt(C/f,2);
+    $('ds_NLbl').textContent=$('ds_N').value;
+    const d=parseFloat($('ds_d').value);$('ds_dLbl').textContent=fmt(d,2);
+    $('ds_spanLbl').textContent=$('ds_span').value;$('ds_dynLbl').textContent=$('ds_dyn').value;
+    if($('ds_steerLbl'))$('ds_steerLbl').textContent=$('ds_steer').value;
+    if($('ds_curveLbl')){
+      $('ds_curveLbl').textContent=$('ds_curve').value;
+      const shape=$('ds_curveShape')?$('ds_curveShape').value:'arc';
+      if($('ds_jBox'))$('ds_jBox').style.display=(shape==='j')?'block':'none';
+      if($('ds_jStraightLbl'))$('ds_jStraightLbl').textContent=$('ds_jStraight').value;
+      // 计算并显示相邻单元张角(splay)——Ureda弧源建模的关键参数
+      if($('ds_splayNote')){
+        const N=parseInt($('ds_N').value), inc=parseFloat($('ds_curve').value);
+        if(shape==='j'){
+          const nStraight=Math.max(1,Math.round(N*parseFloat($('ds_jStraight').value)/100));
+          const nArc=N-nStraight;
+          const splay=nArc>0?inc/nArc:0;
+          $('ds_splayNote').textContent=`弧段 ${nArc} 单元，相邻张角 splay ≈ ${fmt(splay,1)}°；直段 ${nStraight} 单元（splay 0°）`;
+        }else{
+          const splay=N>1?inc/(N-1):0;
+          $('ds_splayNote').textContent=`${N} 单元均分，相邻张角 splay ≈ ${fmt(splay,1)}°（恒定曲率弧源）`;
+        }
+      }
+    }
+    if($('ds_fdLbl')){$('ds_fdLbl').textContent=fmt(parseFloat($('ds_fd').value),1);$('ds_fxLbl').textContent=fmt(parseFloat($('ds_fx').value),1);}
+    // 栅瓣预警（区分偏转/静态阵的临界间距）
+    const lambda=C/f;
+    const gw=$('ds_gratingWarn');
+    const gType=$('ds_type').value;
+    if(['line','phased','curve','focus'].includes(gType)){
+      const dGr=gratingThreshold(gType,lambda);
+      gw.textContent= d>dGr ? `⚠ d>${fmt(dGr,2)}m，有栅瓣` : (d>0.9*dGr ? `临界 d≈${fmt(dGr,2)}m` : `✓ d≤${fmt(dGr,2)}m`);
+      gw.style.color= d>dGr ? 'var(--warm)' : (d>0.9*dGr ? '#d0b24a' : 'var(--accent)');
+    }else gw.textContent='';
+
+    const units=buildUnits(), k=kOf();
+    // 阵列尺寸校验：若阵列跨度超出当前显示范围，自动放大显示范围，确保整个阵列形状可见
+    const xs2=unitsXSpan(units), ys2=unitsYSpan(units);
+    let needSpan=Math.max(xs2,ys2)/0.6; // 阵列跨度不超过画布的60%，留足边距
+    // DFAT模式：测试件在阵列前方距离R处，显示范围须能容纳到测试件下边缘
+    if($('ds_type').value==='dfat'){
+      const arrCenterY=units.reduce((s,u)=>s+u.y,0)/units.length;
+      const R=parseFloat($('ds_ringR').value), th=parseFloat($('ds_th').value);
+      const needForTest=(arrCenterY+R+th/2)/0.9; // 测试件下缘留10%余量
+      needSpan=Math.max(needSpan,needForTest);
+    }
+    let spanEl=$('ds_span');
+    if(needSpan>parseFloat(spanEl.value)){
+      const newSpan=Math.min(40,Math.ceil(needSpan));
+      spanEl.value=newSpan;
+      $('ds_spanLbl').textContent=newSpan;
+    }
+    if($('ds_type').value==='dfat')dfatEvaluate(units);
+    drawField(units,k);
+    drawPolar(units,k);
+    if($('ds_type').value==='multi')buildSrcList();
+  }
+
+  /* ===== DFAT 声场均匀性评估 ===== */
+  const DFAT_BANDS=[125,250,500,1000,2000,4000];
+  function dfatSampleRange(units,freq,testCx,testCy,tw,th){
+    const k=2*Math.PI*freq/C;
+    const NS=6; // 每方向采样数
+    let vals=[];
+    for(let i=0;i<NS;i++)for(let j=0;j<NS;j++){
+      const x=testCx+(i/(NS-1)-0.5)*tw, y=testCy+(j/(NS-1)-0.5)*th;
+      vals.push(20*Math.log10(fieldAt(units,k,x,y).amp));
+    }
+    const max=Math.max(...vals), min=Math.min(...vals), mean=vals.reduce((s,v)=>s+v,0)/vals.length;
+    return {range:max-min, mean, max, min};
+  }
+  function dfatEvaluate(units){
+    // DFAT几何：扬声器阵列朝 +y 方向辐射，测试件(UUT)位于阵列前方距离 R 处。
+    // 以阵列声学中心(各单元y均值)为基准，测试件中心 = 阵列中心 + R，使距离定义对各布局一致直观。
+    const R=parseFloat($('ds_ringR').value);
+    const arrCenterY=units.reduce((s,u)=>s+u.y,0)/units.length;
+    const testCx=0, testCy=arrCenterY+R;
+    const tw=parseFloat($('ds_tw').value), th=parseFloat($('ds_th').value);
+    const f=parseFloat($('ds_f').value);
+    const cur=dfatSampleRange(units,f,testCx,testCy,tw,th);
+    const TOL=6; // ±3dB容差 = 极差6dB
+    $('ds_dfatRange').textContent=fmt(cur.range,1);
+    $('ds_dfatMean').textContent=fmt(cur.mean,1);
+    const passEl=$('ds_dfatPass');
+    if(cur.range<=TOL){passEl.textContent='✓ 满足 ±3dB';passEl.style.color='var(--accent)';}
+    else{passEl.textContent='✗ 超出 ±3dB（差'+fmt(cur.range-TOL,1)+'dB)';passEl.style.color='var(--red)';}
+    // 分倍频带
+    let rows='';
+    DFAT_BANDS.forEach(b=>{
+      const r=dfatSampleRange(units,b,testCx,testCy,tw,th);
+      const pass=r.range<=TOL;
+      rows+=`<tr><td>${b>=1000?(b/1000)+'k':b} Hz</td><td class="val">${fmt(r.range,1)}</td><td style="color:${pass?'var(--accent)':'var(--red)'};font-weight:600">${pass?'✓ 满足':'✗ 超出'}</td></tr>`;
+    });
+    $('dfatBandTbody').innerHTML=rows;
+    // 在画布上标出测试件位置(供drawField读取)
+    R3D_dfatTest={cx:testCx,cy:testCy,tw,th,R};
+  }
+  let R3D_dfatTest=null;
+
+  function drawField(units,k){
+    const cv=$('dsCanvas');const dpr=Math.min(devicePixelRatio||1,2);
+    const w=cv.clientWidth,h=cv.clientHeight;
+    if(cv.width!==Math.floor(w*dpr)){cv.width=Math.floor(w*dpr);cv.height=Math.floor(h*dpr);}
+    const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+    const span=parseFloat($('ds_span').value), dyn=parseFloat($('ds_dyn').value);
+    const showPhase=$('ds_phase').checked;
+    // 坐标：声源在画布上方中央(x居中, y从顶向下=传播方向)
+    // 世界范围 x:[-span/2,span/2], y:[0,span]
+    const W=w,H=h;
+    const res=2; // 计算步长：每 res×res 像素算一次场，块填充（约 4× 提速）
+    const type0=$('ds_type').value;
+    // 先求最大幅值(用于归一)——较密的稀疏采样，聚焦阵额外把焦点纳入避免漏掉尖峰
+    let pmax=0;
+    for(let py=0.2;py<span;py+=span/60)for(let px=-span/2;px<span/2;px+=span/60){
+      const a=fieldAt(units,k,px,py).amp;if(a>pmax)pmax=a;
+    }
+    if(type0==='focus'){
+      const a=fieldAt(units,k,parseFloat($('ds_fx').value),parseFloat($('ds_fd').value)).amp;
+      if(a>pmax)pmax=a;
+    }
+    if(pmax<=0)pmax=1;
+    const IW=Math.ceil(W),IH=Math.ceil(H);
+    const img=ctx.createImageData(IW,IH);
+    const data=img.data;
+    for(let sy=0;sy<H;sy+=res){
+      const py=(sy/H)*span; // y world 0..span
+      for(let sx=0;sx<W;sx+=res){
+        const px=(sx/W-0.5)*span;
+        const fp=fieldAt(units,k,px,py);
+        let val;
+        if(showPhase){
+          // 显示瞬时实部（干涉条纹）
+          const norm=fp.re/pmax;
+          val=(norm+1)/2; // 0..1
+        }else{
+          const db=20*Math.log10(fp.amp/pmax+1e-9);
+          val=Math.max(0,Math.min(1,(db+dyn)/dyn));
+        }
+        const [r,g,b]=showPhase?phaseColor(val):heatColor(val);
+        // 填充 res×res 块
+        for(let by=0;by<res&&sy+by<IH;by++){
+          const rowOff=((sy+by)*IW+sx)*4;
+          for(let bx=0;bx<res&&sx+bx<IW;bx++){
+            const idx=rowOff+bx*4;
+            data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
+          }
+        }
+      }
+    }
+    ctx.putImageData(img,0,0);
+    // 叠加阵列形状
+    const wx=px=>(px/span+0.5)*W, wy=py=>(py/span)*H;
+    const type=$('ds_type').value;
+    const isArray = units.length>1 && type!=='multi';
+
+    if(isArray){
+      // 阵列总长（孔径），用于决定衬底带宽度与单元标记尺寸——与背景热力图解耦，保证可见性
+      let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+      units.forEach(u=>{if(u.x<minX)minX=u.x;if(u.x>maxX)maxX=u.x;if(u.y<minY)minY=u.y;if(u.y>maxY)maxY=u.y;});
+      const apertureWorld=Math.max(0.3,Math.hypot(maxX-minX,maxY-minY));
+      // 衬底带：半透明深色描边+白色填充的"轨道"，先打个底，任何颜色背景上都能看清阵列走向
+      const trackPts=units.map(u=>[wx(u.x),wy(u.y)]);
+      ctx.save();
+      ctx.beginPath();trackPts.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));
+      ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=10;ctx.stroke(); // 深色外描边(衬底)
+      ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=6;ctx.stroke(); // 白色主体
+      ctx.restore();
+
+      // 朝向箭头：从阵列中心指向主瓣方向
+      if(type==='phased'||type==='line'||type==='curve'){
+        const cx=units.reduce((s,u)=>s+u.x,0)/units.length, cy=units.reduce((s,u)=>s+u.y,0)/units.length;
+        const steer=type==='phased'?parseFloat($('ds_steer').value):0;
+        const ar=steer*Math.PI/180;
+        const tipx=cx+Math.sin(ar)*span*0.2, tipy=cy+Math.cos(ar)*span*0.2;
+        ctx.save();
+        ctx.beginPath();ctx.moveTo(wx(cx),wy(cy));ctx.lineTo(wx(tipx),wy(tipy));
+        ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=5;ctx.stroke();
+        ctx.strokeStyle='#ffd24a';ctx.lineWidth=2.5;ctx.stroke();
+        const ah=Math.atan2(wy(tipy)-wy(cy),wx(tipx)-wx(cx));
+        ctx.beginPath();ctx.moveTo(wx(tipx),wy(tipy));
+        ctx.lineTo(wx(tipx)-10*Math.cos(ah-0.4),wy(tipy)-10*Math.sin(ah-0.4));
+        ctx.lineTo(wx(tipx)-10*Math.cos(ah+0.4),wy(tipy)-10*Math.sin(ah+0.4));
+        ctx.closePath();ctx.fillStyle='#ffd24a';ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1.5;ctx.fill();ctx.stroke();
+        ctx.restore();
+      }
+
+      // 单元标记：固定较大的可见尺寸（不随单元数/间距缩小到不可见），密集时允许略微重叠
+      const markR=5.5; // 像素半径，固定值保证可见
+      units.forEach((u,i)=>{
+        const x=wx(u.x),y=wy(u.y);
+        ctx.beginPath();ctx.arc(x,y,markR,0,2*Math.PI);
+        ctx.fillStyle='#0fb58e';ctx.fill();
+        ctx.strokeStyle='#0a2622';ctx.lineWidth=1.5;ctx.stroke();
+      });
+      // 编号（单元数不太多时显示）
+      if(units.length<=20){
+        ctx.font='9px sans-serif';ctx.textAlign='center';
+        units.forEach((u,i)=>{
+          const x=wx(u.x),y=wy(u.y);
+          ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(String(i+1),x,y-7.5);
+          ctx.fillStyle='#fff';ctx.fillText(String(i+1),x,y-8);
+        });
+        ctx.textAlign='left';
+      }
+      // 阵列说明角标：类型+尺寸+单元数
+      const layoutNm=$('ds_dfatLayout')?({flatPlane:'多点平面',arcPlane:'弧形平面',flat3d:'平面三维',arc3d:'弧形三维'})[$('ds_dfatLayout').value]:'';
+      const lbl=({line:'直线阵列',curve:'弧形阵列',focus:'聚焦阵列',phased:'相控阵',dfat:'DFAT '+layoutNm})[type]||'';
+      // 弦长(首尾直线距离)=投影孔径；弧长=沿阵列各段长度之和
+      const chord=apertureWorld;
+      let arcLen=0;for(let i=1;i<units.length;i++)arcLen+=Math.hypot(units[i].x-units[i-1].x,units[i].y-units[i-1].y);
+      const layout3d = type==='dfat' && /3d/.test($('ds_dfatLayout')?$('ds_dfatLayout').value:'');
+      let sizeTxt;
+      if(type==='curve'){
+        // 单条弧：弧长(声学展开长度) + 投影孔径(首尾跨度,决定水平指向性)
+        sizeTxt=`弧长${arcLen.toFixed(2)}m · 投影孔径${chord.toFixed(2)}m`;
+      }else if(layout3d){
+        // 三维阵列：用包络框宽×高表示，不用单一孔径
+        const w=maxX-minX, hgt=maxY-minY;
+        sizeTxt=`阵面${w.toFixed(2)}×${hgt.toFixed(2)}m`;
+      }else{
+        // 直线/相控阵/单排平面：首尾长度即孔径
+        sizeTxt=`孔径${chord.toFixed(2)}m`;
+      }
+      const txt=`${lbl} · ${units.length}单元 · ${sizeTxt}`;
+      ctx.font='11px sans-serif';
+      ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3;ctx.lineJoin='round';
+      ctx.strokeText(txt,8,H-10);
+      ctx.fillStyle='#fff';ctx.fillText(txt,8,H-10);
+    }else{
+      units.forEach(u=>{
+        const x=wx(u.x),y=wy(u.y);
+        ctx.beginPath();ctx.arc(x,y,5,0,2*Math.PI);
+        ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#0a7d63';ctx.lineWidth=1.5;ctx.stroke();
+      });
+    }
+    // 焦点标记
+    if(type==='focus'){
+      const fx=parseFloat($('ds_fx').value),fd=parseFloat($('ds_fd').value);
+      ctx.beginPath();ctx.arc(wx(fx),wy(fd),6,0,2*Math.PI);ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(wx(fx)-9,wy(fd));ctx.lineTo(wx(fx)+9,wy(fd));ctx.moveTo(wx(fx),wy(fd)-9);ctx.lineTo(wx(fx),wy(fd)+9);ctx.stroke();
+    }
+    // DFAT 测试件(UUT)矩形框
+    if(type==='dfat'&&R3D_dfatTest){
+      const t=R3D_dfatTest;
+      const x1=wx(t.cx-t.tw/2),x2=wx(t.cx+t.tw/2),y1=wy(t.cy-t.th/2),y2=wy(t.cy+t.th/2);
+      ctx.save();
+      // 距离标注线：从阵列中心到测试件中心
+      const arrCy=units.reduce((s,u)=>s+u.y,0)/units.length;
+      const ax=wx(0), ay=wy(arrCy), tcy=wy(t.cy);
+      ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax,tcy);ctx.stroke();ctx.setLineDash([]);
+      // 距离数值标签
+      ctx.font='10px sans-serif';ctx.textAlign='left';
+      const midY=(ay+tcy)/2;
+      const distTxt='距离 '+fmt(t.R,1)+'m';
+      ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3;ctx.strokeText(distTxt,ax+5,midY);
+      ctx.fillStyle='#fff';ctx.fillText(distTxt,ax+5,midY);
+      // 测试件框
+      ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=4;ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+      ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+      ctx.setLineDash([]);
+      ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3;ctx.strokeText('测试件 UUT '+fmt(t.tw,1)+'×'+fmt(t.th,1)+'m',(x1+x2)/2,y1-5);
+      ctx.fillStyle='#ffd24a';ctx.fillText('测试件 UUT '+fmt(t.tw,1)+'×'+fmt(t.th,1)+'m',(x1+x2)/2,y1-5);
+      ctx.textAlign='left';ctx.restore();
+    }
+    // 比例尺
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='10px sans-serif';
+    ctx.fillText('0',wx(0)+2,12);ctx.fillText('宽 '+span+'m',4,H-6);
+    // 多声源拖动提示
+    if($('ds_type').value==='multi'){ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillText('点击添加声源',W-90,H-6);}
+  }
+
+  // 热力色：蓝->青->绿->黄->红
+  function heatColor(t){
+    t=Math.max(0,Math.min(1,t));
+    const stops=[[13,27,42],[40,90,160],[15,181,142],[230,200,60],[220,70,50]];
+    const seg=t*(stops.length-1),i=Math.floor(seg),f=seg-i;
+    const a=stops[i],b=stops[Math.min(i+1,stops.length-1)];
+    return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f];
+  }
+  function phaseColor(t){ // 实部：负=蓝 正=红
+    if(t>0.5){const u=(t-0.5)*2;return [30+u*190,40,50];}
+    else{const u=(0.5-t)*2;return [30,60+u*60,60+u*150];}
+  }
+
+  /* ===== 多声源点击/拖动 ===== */
+  let dsDrag=null;
+  function bindCanvas(){
+    const cv=$('dsCanvas');
+    cv.onpointerdown=e=>{
+      if($('ds_type').value!=='multi')return;
+      const r=cv.getBoundingClientRect(),span=parseFloat($('ds_span').value);
+      const px=((e.clientX-r.left)/r.width-0.5)*span, py=((e.clientY-r.top)/r.height)*span;
+      // 命中已有？
+      let hit=-1;multiSrc.forEach((s,i)=>{if(Math.hypot(s.x-px,s.y-py)<span*0.03)hit=i;});
+      if(hit>=0)dsDrag=hit; else {multiSrc.push({x:px,y:py});dsDrag=multiSrc.length-1;}
+      dsRender();
+    };
+    cv.onpointermove=e=>{
+      if(dsDrag==null)return;
+      const r=cv.getBoundingClientRect(),span=parseFloat($('ds_span').value);
+      multiSrc[dsDrag]={x:((e.clientX-r.left)/r.width-0.5)*span, y:Math.max(0.05,((e.clientY-r.top)/r.height)*span)};
+      dsRender();
+    };
+    cv.onpointerup=()=>{dsDrag=null;};
+    // 读数
+    cv.onmousemove=e=>{
+      const r=cv.getBoundingClientRect(),span=parseFloat($('ds_span').value);
+      const px=((e.clientX-r.left)/r.width-0.5)*span, py=((e.clientY-r.top)/r.height)*span;
+      const units=buildUnits(),k=kOf();
+      let pmax=0;for(let yy=0.2;yy<span;yy+=span/30)for(let xx=-span/2;xx<span/2;xx+=span/30){const a=fieldAt(units,k,xx,yy).amp;if(a>pmax)pmax=a;}
+      const db=20*Math.log10(fieldAt(units,k,px,py).amp/pmax+1e-9);
+      $('ds_readout').textContent=`(${fmt(px,1)}, ${fmt(py,1)}) m · ${fmt(db,1)} dB`;
+    };
+  }
+  function buildSrcList(){
+    $('ds_srcList').innerHTML=multiSrc.map((s,i)=>`#${i+1} (${fmt(s.x,1)}, ${fmt(s.y,1)})`).join(' ｜ ')||'画布上点击添加声源';
+  }
+
+  /* ===== 远场方向性极坐标 ===== */
+  let polarCache=null;
+  function computePolar(units,k){
+    const R=1000; // 远场半径
+    const arr=[];
+    for(let a=-90;a<=90;a+=0.5){
+      const ar=a*Math.PI/180;
+      const amp=fieldAt(units,k,R*Math.sin(ar),R*Math.cos(ar)).amp*R; // 乘R抵消1/r
+      arr.push({a,amp});
+    }
+    const max=Math.max(...arr.map(p=>p.amp));
+    arr.forEach(p=>p.db=20*Math.log10(p.amp/max+1e-9));
+    return arr;
+  }
+  function drawPolar(units,k){
+    const arr=computePolar(units,k);polarCache=arr;
+    const W=720,H=360,cx=W/2,cy=H-30,Rmax=H-70,dyn=parseFloat($('ds_dyn').value);
+    let s='';
+    // 同心圈(dB)
+    for(let dbm=0;dbm>=-dyn;dbm-=10){const rr=(1-(-dbm)/dyn)*Rmax;
+      s+=`<circle cx="${cx}" cy="${cy}" r="${rr.toFixed(1)}" fill="none" stroke="#e3ebee"/><text x="${cx+3}" y="${(cy-rr+11).toFixed(1)}" font-size="9" fill="#9bb0ba">${dbm}</text>`;}
+    // 纵轴单位说明
+    s+=`<text x="${cx+3}" y="${(cy-Rmax-4).toFixed(1)}" font-size="9.5" fill="#67808c">相对声压级 (dB)，主瓣峰值=0</text>`;
+    // 角度线
+    [-90,-60,-30,0,30,60,90].forEach(a=>{const ar=a*Math.PI/180;s+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Math.sin(ar)*Rmax).toFixed(1)}" y2="${(cy-Math.cos(ar)*Rmax).toFixed(1)}" stroke="#eef4f6"/><text x="${(cx+Math.sin(ar)*(Rmax+12)).toFixed(1)}" y="${(cy-Math.cos(ar)*(Rmax+12)).toFixed(1)}" font-size="10" fill="#9bb0ba" text-anchor="middle">${a}°</text>`;});
+    // 方向性曲线
+    let pts=arr.map(p=>{const rr=(1-Math.max(0,(-p.db)/dyn))*Rmax;const ar=p.a*Math.PI/180;return [cx+Math.sin(ar)*rr,cy-Math.cos(ar)*rr];});
+    s+=`<path d="M${pts.map(p=>p.map(x=>x.toFixed(1)).join(',')).join(' L')}" fill="var(--accent)" fill-opacity="0.12" stroke="var(--accent)" stroke-width="2"/>`;
+    $('dsPolar').innerHTML=s;
+    // 指标
+    const mainIdx=arr.reduce((bi,p,i)=>p.db>arr[bi].db?i:bi,0);
+    const main=arr[mainIdx];
+    $('ds_mainDir').textContent=fmt(main.a,0);
+    // −6dB 波束宽度：从主瓣两侧找 −6dB 交点；某侧未跌到 −6dB（波束很宽/贴 ±90°边）则以扫描边界近似并标 ≥
+    let hiA=null,loA=null;
+    for(let i=mainIdx;i<arr.length;i++){if(arr[i].db<=-6){hiA=arr[i].a;break;}}
+    for(let i=mainIdx;i>=0;i--){if(arr[i].db<=-6){loA=arr[i].a;break;}}
+    if(hiA==null||loA==null){
+      const bw=(hiA!=null?hiA:arr[arr.length-1].a)-(loA!=null?loA:arr[0].a);
+      $('ds_bw').textContent='≥'+fmt(bw,0);
+    }else $('ds_bw').textContent=fmt(hiA-loA,0);
+    // 旁瓣：先向两侧走到第一零点(局部极小)界定主瓣范围，再取主瓣外最大值——宽波束也不会把主瓣裙边误当旁瓣
+    let ri=mainIdx;while(ri<arr.length-1&&arr[ri+1].db<=arr[ri].db)ri++;
+    let li=mainIdx;while(li>0&&arr[li-1].db<=arr[li].db)li--;
+    let sll=-99;
+    for(let i=0;i<arr.length;i++){if((i<li||i>ri)&&arr[i].db>sll)sll=arr[i].db;}
+    $('ds_sll').textContent= sll>-90?fmt(sll,1):'—';
+    // 栅瓣（用区分偏转/静态的临界间距，与旁瓣电平联判）
+    const lambda=C/parseFloat($('ds_f').value),d=parseFloat($('ds_d').value);
+    const t=$('ds_type').value;
+    if(['line','phased','curve','focus'].includes(t)){
+      const dGr=gratingThreshold(t,lambda);
+      $('ds_grating').textContent= d>dGr ? (sll>-6?'有明显栅瓣':'有栅瓣') : (d>0.9*dGr?'临界':'无');
+    }else $('ds_grating').textContent='—';
+  }
+
+  window.dsExport=function(){
+    const t=$('ds_type').value;
+    const typeNm={single:'单点声源',multi:'多点声源',line:'直线阵列',curve:'弧形阵列',focus:'聚焦阵列',phased:'相控阵',dfat:'DFAT 直接场阵列'}[t];
+    const inputs=[['声源类型',typeNm],['频率',$('ds_f').value+' Hz'],['波长',fmt(C/parseFloat($('ds_f').value),3)+' m']];
+    if(['line','curve','focus','phased'].includes(t)){inputs.push(['单元数',$('ds_N').value]);inputs.push(['单元间距',$('ds_d').value+' m']);}
+    if(t==='phased')inputs.push(['波束偏转',$('ds_steer').value+'°']);
+    if(t==='curve')inputs.push(['阵列弧度',$('ds_curve').value+'°']);
+    if(t==='focus'){inputs.push(['焦点距离',$('ds_fd').value+' m']);inputs.push(['焦点偏移',$('ds_fx').value+' m']);}
+    if(t==='dfat'){const lay=({flatPlane:'多点平面声源',arcPlane:'弧形平面声源',flat3d:'平面三维阵列',arc3d:'弧形三维阵列'})[$('ds_dfatLayout').value];inputs.push(['DFAT布局',lay]);inputs.push(['扬声器数',$('ds_N').value]);inputs.push(['阵列-试件距离',$('ds_ringR').value+' m']);inputs.push(['测试件尺寸',$('ds_tw').value+' × '+$('ds_th').value+' m']);}
+    const results=[['主瓣方向',$('ds_mainDir').textContent,'°'],['−6dB 波束宽度',$('ds_bw').textContent,'°'],['最大旁瓣电平',$('ds_sll').textContent,'dB'],['栅瓣风险',$('ds_grating').textContent]];
+    let tableHTML='', notes='直达声场复数叠加模型（不含反射/混响），各单元为理想点源。栅瓣判据 d>λ/2。';
+    if(t==='dfat'){
+      results.push(['DFAT均匀性判定',$('ds_dfatPass').textContent]);
+      results.push(['声压级极差',$('ds_dfatRange').textContent,'dB']);
+      const rows=Array.from(document.querySelectorAll('#dfatBandTbody tr')).map(tr=>{
+        const tds=tr.querySelectorAll('td');return `<tr><td>${tds[0].textContent}</td><td>${tds[1].textContent}</td><td>${tds[2].textContent}</td></tr>`;
+      }).join('');
+      tableHTML=`<h2 class="rsec" style="font-size:13px">分倍频带均匀性（±3dB容差）</h2><table><thead><tr><th>频带</th><th>极差dB</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`;
+      notes+=' DFAT（Direct Field Acoustic Testing）参考 NASA-HDBK-7010：用扬声器阵列环绕测试件产生直接声场替代混响室测试，典型均匀性容差为测试区域内声压级 ±3dB。实际工程通常需 MIMO 多通道控制精细调试才能达到全频带均匀，本工具为简化几何模型估算。';
+    }
+    exportReport({
+      title:'直达声场 / 阵列模拟报告',
+      inputs,
+      results,
+      tableHTML,
+      svg:grabSVG('dsPolar'),
+      notes
+    });
+  };
+
+  /* ===== 一键动态演示 ===== */
+  let dsDemoRaf=null, dsDemoT=0;
+  window.dsDemoToggle=function(){
+    if(dsDemoRaf){cancelAnimationFrame(dsDemoRaf);dsDemoRaf=null;$('ds_demoBtn').textContent='▶ 一键动态演示';return;}
+    $('ds_demoBtn').textContent='⏸ 停止演示';
+    // 切到相控阵，自动扫偏转角
+    $('ds_type').value='phased';dsTypeChange();
+    dsDemoT=0;
+    const loop=()=>{
+      dsDemoT+=0.018;
+      const steer=Math.sin(dsDemoT)*60; // -60~60往复
+      $('ds_steer').value=Math.round(steer);
+      // 频率也缓慢起伏，展示波长变化
+      const f=2000+Math.sin(dsDemoT*0.4)*1200;
+      $('ds_f').value=Math.round(f);
+      dsRender();
+      dsDemoRaf=requestAnimationFrame(loop);
+    };
+    loop();
+  };
+
+  // init
+  let dsInit=false;
+  function initDs(){if(dsInit)return;dsInit=true;bindCanvas();dsTypeChange();}
+  document.querySelectorAll('#modnav button').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.mod==='directfield')setTimeout(initDs,40);
+    else if(dsDemoRaf){cancelAnimationFrame(dsDemoRaf);dsDemoRaf=null;const db=$('ds_demoBtn');if(db)db.textContent='▶ 一键动态演示';}
+  }));
+  if($('mod-directfield')&&$('mod-directfield').classList.contains('active'))setTimeout(initDs,40);
+})();
+
+/* ============ 信号发生器 ============ */
+(function(){
+  const DESC={
+    sine:'单频正弦波。用于听阈、共振、谐波失真测试。',
+    white:'白噪声：每 Hz 能量相等，功率谱平直，听感偏高频"嘶"声。',
+    pink:'粉噪声：每倍频程能量相等（−3dB/oct），声学测量最常用（RTA、频响、扬声器调试）。',
+    brown:'棕噪声：−6dB/oct，低频更重，听感低沉如瀑布/海浪。',
+    logsweep:'对数（指数）扫频：每倍频程停留时间相等，信噪比均匀，可分离谐波失真。脉冲响应/RT60 测量首选。',
+    linsweep:'线性扫频：频率随时间线性上升，高频停留时间短。用于特定线性分析。',
+    burst:'猝发音：固定周期数的正弦短促重复，用于反射、回声、瞬态响应测量。',
+    mls:'最大长度序列（MLS）：伪随机二值序列，频谱近白噪，抗噪声能力强，用于脉冲响应测量。'
+  };
+  let sgType='sine', sgCtx=null, sgNode=null, sgGainL=null, sgGainR=null, sgMerger=null, sgAnalyser=null,
+      sgPlaying=false, sgDbfs=-20, sgChannel='stereo', sgRaf=null, sgSpecRaf=null;
+  let sweepState=null;
+
+  document.querySelectorAll('#sg_type button').forEach(b=>b.onclick=()=>{
+    if(sgPlaying)sgStop();
+    sgType=b.dataset.s;
+    document.querySelectorAll('#sg_type button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    $('sg_typeDesc').textContent=DESC[sgType];
+    // 显示对应参数区
+    $('sg_freqBox').style.display=(sgType==='sine')?'block':'none';
+    $('sg_sweepBox').style.display=(sgType==='logsweep'||sgType==='linsweep')?'block':'none';
+    $('sg_burstBox').style.display=(sgType==='burst')?'block':'none';
+  });
+  $('sg_typeDesc').textContent=DESC.sine;
+
+  function dbfsToGain(db){ return db<=-90?0:Math.pow(10,db/20); }
+  function ensure(){ if(!sgCtx){sgCtx=new (window.AudioContext||window.webkitAudioContext)();
+    sgAnalyser=sgCtx.createAnalyser();sgAnalyser.fftSize=4096;sgAnalyser.smoothingTimeConstant=0.75;}
+    return sgCtx; }
+
+  function applyGain(){
+    if(!sgCtx)return;const g=dbfsToGain(sgDbfs);
+    const gl=sgChannel==='right'?0:g, gr=sgChannel==='left'?0:g;
+    if(sgGainL)sgGainL.gain.setTargetAtTime(gl,sgCtx.currentTime,0.02);
+    if(sgGainR)sgGainR.gain.setTargetAtTime(gr,sgCtx.currentTime,0.02);
+  }
+  window.sgVolUpd=function(){
+    const lvl=parseFloat($('sgVol').value);   // 0..60 正向刻度
+    sgDbfs=lvl-60;                              // 0->-60dBFS, 60->0dBFS
+    $('sgVolLbl').textContent=lvl;
+    $('sgDbfsLbl').textContent=sgDbfs;
+    const g=dbfsToGain(sgDbfs);
+    $('sg_gain').textContent=fmt(g,3);
+    $('sg_ampPct').textContent=fmt(g*100,1)+'%';
+    applyGain();
+    sgVoltageUpd();
+  };
+  window.sgVolAdj=function(d){
+    const s=$('sgVol');
+    let v=parseFloat(s.value)+d;
+    v=Math.max(0,Math.min(60,v));
+    s.value=v; sgVolUpd();
+  };
+  function sgVoltageUpd(){
+    // 满量程电压 Vfs（0 dBFS, RMS 约定）
+    const ref=$('sg_calref').value, val=parseFloat($('sg_calval').value);
+    let Vfs=NaN;
+    if(ref==='dbu'){ if(!isNaN(val))Vfs=0.775*Math.pow(10,val/20); }
+    else if(ref==='dbv'){ if(!isNaN(val))Vfs=1.0*Math.pow(10,val/20); }
+    else if(ref==='vrms'){ Vfs=val; }
+    // 标签联动
+    $('sg_calvalLbl').innerHTML = ref==='dbu'?'0 dBFS = ? dBu <span class="note">消费声卡常见 +4，专业 +18~+24</span>'
+      : ref==='dbv'?'0 dBFS = ? dBV <span class="note">消费 −10 dBV 常见</span>'
+      : '0 dBFS = ? Vrms <span class="note">直接填满量程电压</span>';
+    if(!isFinite(Vfs)||Vfs<=0){$('sg_vout').textContent='—';$('sg_vfs').textContent='—';$('sg_pwrCell').style.display='none';return;}
+    // 当前电平电压 = Vfs × 10^(dBFS/20)
+    const Vout=Vfs*Math.pow(10,sgDbfs/20);
+    $('sg_vfs').textContent=fmt(Vfs,3);
+    // 单位调整（V或mV）
+    const voutEl=$('sg_vout');
+    if(Vout<1){voutEl.textContent=fmt(Vout*1000,1);voutEl.parentElement.querySelector('.u').textContent='mVrms';}
+    else{voutEl.textContent=fmt(Vout,3);voutEl.parentElement.querySelector('.u').textContent='Vrms';}
+    // 负载功率
+    const load=parseFloat($('sg_load').value);
+    if(isFinite(load)&&load>0){
+      const P=Vout*Vout/load; // W
+      $('sg_pwrCell').style.display='block';
+      $('sg_pwr').textContent= P>=0.001?fmt(P*1000,2):fmt(P*1e6,1);
+      $('sg_pwrCell').querySelector('.u').textContent= P>=0.001?'mW':'µW';
+    }else $('sg_pwrCell').style.display='none';
+  }
+  window.sgFreqUpd=function(){const f=parseFloat($('sgFreq').value);$('sgFreqLbl').textContent=f;if(sgNode&&sgNode.frequency)sgNode.frequency.setTargetAtTime(f,sgCtx.currentTime,0.02);};
+  window.sgSweepUpd=function(){};
+  window.sgBurstUpd=function(){if(sgPlaying&&sgType==='burst'){sgStop();sgStart();}};
+  window.sgCh=function(c){sgChannel=c;$('sg_chS').classList.toggle('aOn',c==='stereo');$('sg_chL').classList.toggle('aOn',c==='left');$('sg_chR').classList.toggle('aOn',c==='right');applyGain();};
+
+  // ---- 噪声 buffer 生成 ----
+  function makeNoiseBuffer(ctx,type){
+    const len=ctx.sampleRate*2; // 2秒循环
+    const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    if(type==='white'){for(let i=0;i<len;i++)d[i]=Math.random()*2-1;}
+    else if(type==='pink'){
+      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+      for(let i=0;i<len;i++){const w=Math.random()*2-1;
+        b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.96900*b2+w*0.1538520;
+        b3=0.86650*b3+w*0.3104856;b4=0.55000*b4+w*0.5329522;b5=-0.7616*b5-w*0.0168980;
+        d[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11;b6=w*0.115926;}
+    }
+    else if(type==='brown'){
+      let last=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;last=(last+0.02*w)/1.02;d[i]=last*3.5;}
+    }
+    else if(type==='mls'){
+      // 16阶MLS, 周期2^16-1
+      let reg=0xACE1, n=len;
+      for(let i=0;i<n;i++){
+        const bit=((reg>>0)^(reg>>2)^(reg>>3)^(reg>>5))&1;
+        reg=(reg>>1)|(bit<<15);
+        d[i]=(reg&1)?0.7:-0.7;
+      }
+    }
+    return buf;
+  }
+
+  function sgStart(){
+    const ctx=ensure();
+    sgGainL=ctx.createGain();sgGainR=ctx.createGain();sgGainL.gain.value=0;sgGainR.gain.value=0;
+    sgMerger=ctx.createChannelMerger(2);
+    // 信号源 -> analyser(监听) + L/R gain -> merger -> dest
+    let src;
+    if(sgType==='sine'){
+      src=ctx.createOscillator();src.type='sine';src.frequency.value=parseFloat($('sgFreq').value);src.start();sgNode=src;
+    }else if(['white','pink','brown','mls'].includes(sgType)){
+      src=ctx.createBufferSource();src.buffer=makeNoiseBuffer(ctx,sgType);src.loop=true;src.start();sgNode=src;
+    }else if(sgType==='logsweep'||sgType==='linsweep'){
+      src=ctx.createOscillator();src.type='sine';
+      const f0=parseFloat($('sg_f0').value),f1=parseFloat($('sg_f1').value),dur=parseFloat($('sg_dur').value),loop=$('sg_loop').value==='1';
+      const t0=ctx.currentTime;
+      function schedule(start){
+        src.frequency.cancelScheduledValues(start);
+        src.frequency.setValueAtTime(f0,start);
+        if(sgType==='logsweep')src.frequency.exponentialRampToValueAtTime(Math.max(1,f1),start+dur);
+        else src.frequency.linearRampToValueAtTime(f1,start+dur);
+      }
+      schedule(t0);src.start();sgNode=src;
+      sweepState={f0,f1,dur,loop,t0,ctx};
+      if(loop){
+        sweepState.timer=setInterval(()=>{ if(!sgPlaying){clearInterval(sweepState.timer);return;}
+          schedule(ctx.currentTime); },dur*1000);
+      }else{
+        sweepState.endTimer=setTimeout(()=>{ if(sgPlaying)sgStop(); },dur*1000+100);
+      }
+    }else if(sgType==='burst'){
+      // 用周期性gating的振荡器
+      src=ctx.createOscillator();src.type='sine';src.frequency.value=parseFloat($('sg_bf').value);
+      const bf=parseFloat($('sg_bf').value),cyc=parseFloat($('sg_bcyc').value),gap=parseFloat($('sg_bgap').value)/1000;
+      const burstDur=cyc/bf;
+      const gate=ctx.createGain();gate.gain.value=0;
+      src.connect(gate);
+      let t=ctx.currentTime+0.05;
+      const period=burstDur+gap;
+      for(let k=0;k<200;k++){ // 预排约200个猝发
+        gate.gain.setValueAtTime(0,t);
+        gate.gain.setTargetAtTime(1,t,0.001);
+        gate.gain.setValueAtTime(1,t+burstDur);
+        gate.gain.setTargetAtTime(0,t+burstDur,0.001);
+        t+=period;
+      }
+      src.start();sgNode=src;
+      gate.connect(sgAnalyser);
+      gate.connect(sgGainL).connect(sgMerger,0,0);
+      gate.connect(sgGainR).connect(sgMerger,0,1);
+      sgMerger.connect(ctx.destination);
+      sgBurstGate=gate;
+      applyGain();sgPlaying=true;sgIcon(true);drawSpectrum();return;
+    }
+    // 通用接线（非burst）
+    sgNode.connect(sgAnalyser);
+    sgNode.connect(sgGainL).connect(sgMerger,0,0);
+    sgNode.connect(sgGainR).connect(sgMerger,0,1);
+    sgMerger.connect(ctx.destination);
+    applyGain();sgPlaying=true;sgIcon(true);
+    drawSpectrum();
+    if(sweepState&&(sgType==='logsweep'||sgType==='linsweep'))updateSweepNow();
+  }
+  let sgBurstGate=null;
+  function sgStop(){
+    sgPlaying=false;sgIcon(false);
+    if(sweepState){if(sweepState.timer)clearInterval(sweepState.timer);if(sweepState.endTimer)clearTimeout(sweepState.endTimer);sweepState=null;}
+    if(sgCtx){if(sgGainL)sgGainL.gain.setTargetAtTime(0,sgCtx.currentTime,0.03);if(sgGainR)sgGainR.gain.setTargetAtTime(0,sgCtx.currentTime,0.03);}
+    const node=sgNode;setTimeout(()=>{try{node&&node.stop();}catch(e){}},120);
+    sgNode=null;sgBurstGate=null;
+    if(sgSpecRaf)cancelAnimationFrame(sgSpecRaf);
+    if(sgRaf)cancelAnimationFrame(sgRaf);
+  }
+  window.sgToggle=function(){ sgPlaying?sgStop():sgStart(); };
+  function sgIcon(playing){
+    $('sgPlay').classList.toggle('playing',playing);
+    $('sgIcon').innerHTML=playing?'<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>':'<path d="M8 5v14l11-7z"/>';
+  }
+  function updateSweepNow(){
+    if(!sgPlaying||!sweepState){return;}
+    const {f0,f1,dur,t0,ctx}=sweepState;
+    const el=ctx.currentTime-t0, t=((el%dur)+dur)%dur;
+    let f;
+    if(sgType==='logsweep')f=f0*Math.pow(f1/f0,t/dur); else f=f0+(f1-f0)*t/dur;
+    $('sg_sweepNow').textContent=`当前频率 ≈ ${fmt(f,0)} Hz（${fmt(t,1)} / ${dur} s）`;
+    sgRaf=requestAnimationFrame(updateSweepNow);
+  }
+
+  // ---- 实时频谱绘制（对数频率轴） ----
+  function drawSpectrum(){
+    const cv=$('sgSpectrum');if(!cv||!sgAnalyser){return;}
+    const dpr=Math.min(devicePixelRatio||1,2);
+    const w=cv.clientWidth,h=cv.clientHeight;
+    if(cv.width!==w*dpr){cv.width=w*dpr;cv.height=h*dpr;}
+    const ctx2=cv.getContext('2d');ctx2.setTransform(dpr,0,0,dpr,0,0);
+    const bins=sgAnalyser.frequencyBinCount;const data=new Uint8Array(bins);
+    const sr=sgCtx.sampleRate;
+    let peak=new Float32Array(bins); // 峰值保持
+    function frame(){
+      if(!sgPlaying){ctx2.clearRect(0,0,w,h);return;}
+      sgAnalyser.getByteFrequencyData(data);
+      ctx2.clearRect(0,0,w,h);
+      const fmin=20,fmax=20000,lmin=Math.log10(fmin),lmax=Math.log10(fmax);
+      // 网格
+      ctx2.strokeStyle='rgba(255,255,255,.06)';ctx2.lineWidth=1;ctx2.fillStyle='rgba(255,255,255,.35)';ctx2.font='9px sans-serif';
+      [20,50,100,200,500,1000,2000,5000,10000,20000].forEach(f=>{
+        const x=(Math.log10(f)-lmin)/(lmax-lmin)*w;
+        ctx2.beginPath();ctx2.moveTo(x,0);ctx2.lineTo(x,h-12);ctx2.stroke();
+        ctx2.fillText(f>=1000?(f/1000)+'k':f,x-6,h-2);
+      });
+      const X=f=>(Math.log10(f)-lmin)/(lmax-lmin)*w;
+      const Y=v=>h-12-(v/255)*(h-18);
+      // 实时频谱填充
+      ctx2.beginPath();let first=true;
+      for(let i=1;i<bins;i++){const f=i*sr/(2*bins);if(f<fmin||f>fmax)continue;
+        const x=X(f),y=Y(data[i]);if(first){ctx2.moveTo(x,y);first=false;}else ctx2.lineTo(x,y);
+        if(data[i]>peak[i])peak[i]=data[i];else peak[i]*=0.96; // 峰值缓降
+      }
+      const grad=ctx2.createLinearGradient(0,0,w,0);
+      grad.addColorStop(0,'#34d3b0');grad.addColorStop(0.5,'#0fb58e');grad.addColorStop(1,'#3d7eea');
+      ctx2.strokeStyle=grad;ctx2.lineWidth=2;ctx2.stroke();
+      ctx2.lineTo(w,h-12);ctx2.lineTo(0,h-12);ctx2.closePath();
+      ctx2.fillStyle='rgba(15,181,142,.12)';ctx2.fill();
+      // 峰值保持线
+      ctx2.beginPath();first=true;
+      for(let i=1;i<bins;i++){const f=i*sr/(2*bins);if(f<fmin||f>fmax)continue;
+        const x=X(f),y=Y(peak[i]);if(first){ctx2.moveTo(x,y);first=false;}else ctx2.lineTo(x,y);}
+      ctx2.strokeStyle='rgba(255,210,74,.8)';ctx2.lineWidth=1.5;ctx2.stroke();
+      sgSpecRaf=requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  // 切走模块停止
+  document.querySelectorAll('#modnav button').forEach(b=>b.addEventListener('click',()=>{if(sgPlaying)sgStop();if(calPlaying)calStopTone();}));
+  sgVolUpd();
+
+  /* ===== 相对响应测量（反向补偿） ===== */
+  const CAL_BANDS=[125,250,500,1000,2000,4000];
+  let calMeasured={}; // band -> measured SPL
+  let calPlaying=false, calToneCtx=null, calToneNode=null, calToneGain=null, calSeqTimer=null, calCurBand=null;
+
+  function calBuild(){
+    let h='';
+    CAL_BANDS.forEach(b=>{
+      h+=`<tr id="calRow_${b}">
+        <td class="val">${b>=1000?(b/1000)+'k':b} Hz</td>
+        <td><span id="calState_${b}" style="color:var(--muted)">待测</span></td>
+        <td><input type="number" id="calIn_${b}" style="width:80px" value="${calMeasured[b]!=null?calMeasured[b]:''}" oninput="calSetMeasured(${b},this.value)"></td>
+        <td class="calc" id="calDiff_${b}">—</td>
+        <td><button class="btn ghost tiny" onclick="calPlaySingle(${b})">▶ 单播</button></td>
+      </tr>`;
+    });
+    $('calTbody').innerHTML=h;
+  }
+  window.calLvlUpd=function(){$('cal_lvlLbl').textContent=$('cal_lvl').value;};
+  window.calSetMeasured=function(b,v){calMeasured[b]=(v===''?null:parseFloat(v));calRecalc();};
+  window.calReset=function(){calMeasured={};calBuild();calRecalc();$('calStatus').textContent='';};
+
+  function calEnsureCtx(){if(!calToneCtx)calToneCtx=new (window.AudioContext||window.webkitAudioContext)();return calToneCtx;}
+  function calToneStart(freq){
+    calToneStop();
+    const ctx=calEnsureCtx();
+    const lvl=parseFloat($('cal_lvl').value), dbfs=lvl-60, gain=Math.pow(10,dbfs/20);
+    const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;
+    const g=ctx.createGain();g.gain.value=0;
+    osc.connect(g).connect(ctx.destination);osc.start();
+    g.gain.setTargetAtTime(gain,ctx.currentTime,0.02);
+    calToneNode=osc;calToneGain=g;
+  }
+  function calToneStop(){
+    if(calToneGain&&calToneCtx)calToneGain.gain.setTargetAtTime(0,calToneCtx.currentTime,0.03);
+    const node=calToneNode;setTimeout(()=>{try{node&&node.stop();}catch(e){}},120);
+    calToneNode=null;calToneGain=null;
+  }
+  window.calStopTone=function(){calToneStop();if(calSeqTimer){clearTimeout(calSeqTimer);calSeqTimer=null;}calPlaying=false;
+    if(calCurBand){const el=$('calState_'+calCurBand);if(el){el.textContent='待测';el.style.color='var(--muted)';}calCurBand=null;}
+    $('calPlayBtn').textContent='▶ 开始逐频带播放';$('calStatus').textContent='已停止。';};
+
+  window.calPlaySingle=function(b){
+    if(calPlaying)return;
+    CAL_BANDS.forEach(x=>{const el=$('calState_'+x);if(el){el.textContent='待测';el.style.color='var(--muted)';}});
+    calCurBand=b;const el=$('calState_'+b);el.textContent='▶ 播放中';el.style.color='var(--accent)';
+    calToneStart(b);
+    const dur=parseFloat($('cal_dur').value)||3;
+    setTimeout(()=>{calToneStop();if(el){el.textContent='已播放，请输入实测值';el.style.color='#2a5fc0';}},dur*1000);
+  };
+
+  window.calStart=function(){
+    if(calPlaying){calStopTone();return;}
+    calPlaying=true;$('calPlayBtn').textContent='⏸ 停止播放';
+    let idx=0;
+    const dur=()=>parseFloat($('cal_dur').value)||3;
+    function step(){
+      if(!calPlaying||idx>=CAL_BANDS.length){
+        calPlaying=false;calToneStop();$('calPlayBtn').textContent='▶ 开始逐频带播放';
+        $('calStatus').textContent= idx>=CAL_BANDS.length ? '✓ 全部频带播放完毕，请确认各行实测值已填入。' : '';
+        CAL_BANDS.forEach(b=>{if(calCurBand!==b){const el=$('calState_'+b);if(el&&el.textContent==='待测'){}}});
+        return;
+      }
+      const b=CAL_BANDS[idx];
+      CAL_BANDS.forEach(x=>{const el=$('calState_'+x);if(el&&x!==b)el.textContent= calMeasured[x]!=null?'已测':'待测';});
+      calCurBand=b;const el=$('calState_'+b);el.textContent='▶ 播放中 '+(b>=1000?(b/1000)+'k':b)+'Hz';el.style.color='var(--accent)';
+      $('calStatus').innerHTML=`正在播放 <b>${b>=1000?(b/1000)+'k':b} Hz</b>（第 ${idx+1}/${CAL_BANDS.length} 个）—— 请用声级计读数后填入对应行，可随时暂停。`;
+      calToneStart(b);
+      calSeqTimer=setTimeout(()=>{
+        calToneStop();
+        if(el){el.textContent='请输入实测值 →';el.style.color='#2a5fc0';}
+        idx++;
+        calSeqTimer=setTimeout(step,400); // 短暂间隔后播下一个
+      },dur()*1000);
+    }
+    step();
+  };
+
+  window.calRecalc=function(){
+    const have=CAL_BANDS.filter(b=>calMeasured[b]!=null&&!isNaN(calMeasured[b]));
+    const ref=calMeasured[1000];
+    CAL_BANDS.forEach(b=>{
+      const d=$('calDiff_'+b);
+      if(d){
+        if(calMeasured[b]!=null&&ref!=null){const diff=calMeasured[b]-ref;d.textContent=(diff>=0?'+':'')+fmt(diff,1)+' dB';}
+        else d.textContent='—';
+      }
+    });
+    calDraw(have.length?CAL_BANDS.map(b=>calMeasured[b]):[]);
+  };
+  function calDraw(){
+    const ref=calMeasured[1000];
+    const W=720,H=280,mL=46,mR=14,mT=18,mB=42,pw=W-mL-mR,ph=H-mT-mB,n=CAL_BANDS.length;
+    const xAt=i=>mL+pw*i/(n-1);
+    const haveRef= ref!=null && !isNaN(ref);
+    const diffs=CAL_BANDS.map(b=> (haveRef&&calMeasured[b]!=null)? calMeasured[b]-ref : null);
+    const validVals=diffs.filter(v=>v!=null);
+    const ymax=Math.max(6,...validVals.map(v=>Math.abs(v)))*1.15;
+    const yAt=v=>mT+ph/2-(v/ymax)*(ph/2);
+    let s='';
+    for(let v=-Math.ceil(ymax);v<=Math.ceil(ymax);v+=Math.max(1,Math.round(ymax/3))){
+      const y=yAt(v);s+=`<line x1="${mL}" y1="${y}" x2="${W-mR}" y2="${y}" stroke="#eef4f6"/><text x="${mL-6}" y="${y+4}" font-size="10" fill="#9bb0ba" text-anchor="end">${v>0?'+':''}${v}</text>`;
+    }
+    s+=`<line x1="${mL}" y1="${yAt(0)}" x2="${W-mR}" y2="${yAt(0)}" stroke="#d8e2e7" stroke-width="1.5"/>`;
+    CAL_BANDS.forEach((b,i)=>s+=`<text x="${xAt(i)}" y="${H-mB+16}" font-size="10" fill="#9bb0ba" text-anchor="middle">${b>=1000?(b/1000)+'k':b}</text>`);
+    s+=`<text x="${mL+pw/2}" y="${H-6}" font-size="11" fill="#67808c" text-anchor="middle">频带 (Hz)</text><text x="13" y="${mT+ph/2}" font-size="11" fill="#67808c" text-anchor="middle" transform="rotate(-90 13 ${mT+ph/2})">相对偏差 (dB)</text>`;
+    if(validVals.length>=2){
+      let pts=[];CAL_BANDS.forEach((b,i)=>{if(diffs[i]!=null)pts.push([xAt(i),yAt(diffs[i])]);});
+      s+=`<path d="M${pts.map(p=>p.map(x=>x.toFixed(1)).join(',')).join(' L')}" fill="none" stroke="var(--accent)" stroke-width="2.4"/>`;
+      pts.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--accent)"/>`);
+    }else if(validVals.length===1){
+      CAL_BANDS.forEach((b,i)=>{if(diffs[i]!=null)s+=`<circle cx="${xAt(i)}" cy="${yAt(diffs[i])}" r="4" fill="var(--accent)"/>`;});
+    }
+    $('calChart').innerHTML=s;
+  }
+  window.calExport=function(){
+    const ref=calMeasured[1000];
+    const rows=CAL_BANDS.map(b=>{
+      const diff=(ref!=null&&calMeasured[b]!=null)?(calMeasured[b]-ref):null;
+      return [b+' Hz', calMeasured[b]!=null?fmt(calMeasured[b],1)+' dB':'—', diff!=null?(diff>=0?'+':'')+fmt(diff,1)+' dB':'—'];
+    });
+    exportReport({
+      title:'相对响应测量报告（反向补偿）',
+      inputs:[['测试电平',$('cal_lvl').value+' / 60（约 '+(parseFloat($('cal_lvl').value)-60)+' dBFS）'],['每频带播放时长',$('cal_dur').value+' s']],
+      tableHTML:`<h2 class="rsec" style="font-size:13px">各频带实测与相对偏差</h2><table><thead><tr><th>频带</th><th>实测 SPL</th><th>相对1kHz偏差</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table>`,
+      svg:grabSVG('calChart'),
+      notes:'相对测量：以1kHz为0基准的频带间偏差，反映测试链路（声卡/功放/扬声器/房间/测点位置）的综合相对响应，非绝对校准。换测点或换设备需重新测量。'
+    });
+  };
+  calBuild();calRecalc();
+})();
+
+/* ============ 隔声量评价 ============ */
+(function(){
+  const BANDS=[50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000];
+  const LOW=[50,63,80];
+  const MAIN=[100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150];
+  const isLow=f=>LOW.includes(f);
+  const REF={100:-19,125:-16,160:-13,200:-10,250:-7,315:-4,400:-1,500:0,630:1,800:2,1000:3,1250:4,1600:4,2000:4,2500:4,3150:4};
+  const SPEC_C={50:-29,63:-26,80:-23,100:-21,125:-18,160:-16,200:-13,250:-12,315:-11,400:-9,500:-8,630:-9,800:-10,1000:-11,1250:-13,1600:-15,2000:-16,2500:-18,3150:-20,4000:-22,5000:-24};
+  const SPEC_CTR={50:-20,63:-20,80:-18,100:-16,125:-15,160:-14,200:-13,250:-12,315:-11,400:-9,500:-8,630:-9,800:-10,1000:-11,1250:-13,1600:-15,2000:-16,2500:-18,3150:-20,4000:-22,5000:-24};
+  let qtype='R';
+  const HINTS={
+    R:'实验室隔声量 R = L̄₁ − L̄₂ + 10·log₁₀(S/A)，反映构件本身隔声性能。',
+    Rp:"现场表观隔声量 R′ = L̄₁ − L̄₂ + 10·log₁₀(S/A)，含侧向传声，现场实测用。",
+    DnT:'标准化声压级差 DnT = L̄₁ − L̄₂ + 10·log₁₀(T/T₀)，T₀=0.5 s，居住建筑现场评价常用。'
+  };
+  document.querySelectorAll('#qtype button').forEach(b=>b.onclick=()=>{
+    qtype=b.dataset.q;document.querySelectorAll('#qtype button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    $('qtypeHint').textContent=HINTS[qtype];
+    $('rwLbl').textContent=qtype==='DnT'?'加权标准化声压级差 DnT,w':qtype==='Rp'?"加权表观隔声量 R′w":'加权隔声量 Rw';
+    insRecalc();
+  });
+  $('qtypeHint').textContent=HINTS.R;
+
+  function buildTable(which){
+    const n=parseInt($(which===1?'p_n1':'p_n2').value)||1;
+    const t=$(which===1?'t1':'t2');
+    let head='<thead><tr><th>频带 Hz</th>';
+    for(let i=1;i<=n;i++)head+=`<th>P${i}</th>`;
+    head+=which===2?'<th>T (s)</th><th>L̄₂</th>':'<th>L̄₁</th>';head+='</tr></thead>';
+    let body='<tbody>';
+    BANDS.forEach(f=>{
+      body+=`<tr class="${isLow(f)?'lowband':''}"><td>${f}</td>`;
+      for(let i=1;i<=n;i++)body+=`<td><input type="number" data-w="${which}" data-f="${f}" data-p="${i}" oninput="insRecalc()"></td>`;
+      if(which===2)body+=`<td><input type="number" step="0.01" data-T="${f}" oninput="insRecalc()"></td><td class="calc" data-avg2="${f}">—</td>`;
+      else body+=`<td class="calc" data-avg1="${f}">—</td>`;
+      body+='</tr>';
+    });
+    t.innerHTML=head+body+'</tbody>';
+  }
+  window.insRebuild=function(){buildTable(1);buildTable(2);insRecalc();};
+
+  function avgRow(which,f){
+    const inps=document.querySelectorAll(`input[data-w="${which}"][data-f="${f}"]`);
+    let sum=0,cnt=0;inps.forEach(x=>{const v=parseFloat(x.value);if(!isNaN(v)){sum+=Math.pow(10,v/10);cnt++;}});
+    return cnt?10*log10(sum/cnt):null;
+  }
+  function showWarn(msg,type){
+    const w=$('insWarn');if(!msg){w.classList.remove('show');return;}
+    w.classList.add('show');w.textContent=msg;
+    w.style.background=type==='ok'?'#e3f7f1':'#fdf3e1';w.style.borderColor=type==='ok'?'#c5ece1':'#f6d99a';w.style.color=type==='ok'?'#0a7d63':'#8a5e08';
+  }
+
+  // ISO 9613-1 空气声吸收系数 alpha(dB/m) -> 功率衰减系数 m(/m)
+  function airAlpha(f,Tc,hr,pa){
+    const pr=101.325,T=Tc+273.15,T0=293.15,T01=273.16;
+    const C=-6.8346*Math.pow(T01/T,1.261)+4.6151;
+    const psat_pr=Math.pow(10,C);
+    const h=hr*psat_pr*pr/pa;
+    const frO=(pa/pr)*(24+4.04e4*h*(0.02+h)/(0.391+h));
+    const frN=(pa/pr)*Math.pow(T/T0,-0.5)*(9+280*h*Math.exp(-4.170*(Math.pow(T/T0,-1/3)-1)));
+    const f2=f*f;
+    return 8.686*f2*(1.84e-11*(pr/pa)*Math.sqrt(T/T0)
+      +Math.pow(T/T0,-2.5)*(0.01275*Math.exp(-2239.1/T)/(frO+f2/frO)
+      +0.1068*Math.exp(-3352.0/T)/(frN+f2/frN)));
+  }
+  function airM(f){
+    const Tc=parseFloat($('p_temp').value),hr=parseFloat($('p_rh').value),pa=parseFloat($('p_pa').value);
+    if($('p_mmode').value==='simple') return 5.5e-4*(50/hr)*Math.pow(f/1000,1.7);
+    return airAlpha(f,Tc,hr,pa)/4.343; // dB/m -> /m
+  }
+
+  window.insRecalc=function(){
+    const S=parseFloat($('p_S').value),V=parseFloat($('p_V').value),T0=0.5,data={};
+    const useAir=$('airCorr').checked;
+    $('airParams').style.display=useAir?'grid':'none';
+    BANDS.forEach(f=>{
+      const L1=avgRow(1,f),L2=avgRow(2,f);
+      const Tin=document.querySelector(`input[data-T="${f}"]`),T=Tin?parseFloat(Tin.value):NaN;
+      const c1=document.querySelector(`[data-avg1="${f}"]`);if(c1)c1.textContent=L1!=null?fmt(L1,1):'—';
+      const c2=document.querySelector(`[data-avg2="${f}"]`);if(c2)c2.textContent=L2!=null?fmt(L2,1):'—';
+      let R=null;
+      if(L1!=null&&L2!=null){
+        if(qtype==='DnT'){if(T>0)R=L1-L2+10*log10(T/T0);}
+        else{if(T>0){let A=0.161*V/T; if(useAir)A=A-4*airM(f)*V; if(S>0&&A>0)R=L1-L2+10*log10(S/A);}}
+      }
+      data[f]={L1,L2,T,R};
+    });
+    const ok=MAIN.filter(f=>data[f].R!=null);
+    drawChart(data,null);
+    if(ok.length<MAIN.length){
+      ['rwVal','cVal','ctrVal','cExt'].forEach(id=>$(id).textContent='—');
+      $('rwExpr').textContent='填齐 100–3150 Hz 全部 16 个频带的 L₁、L₂、T 后自动拟合 Rw。';
+      showWarn(ok.length===0?'':`还差 ${MAIN.length-ok.length} 个主频带数据未填全，暂不能拟合单值。`);
+      return;
+    }
+    const Rint={};MAIN.forEach(f=>Rint[f]=Math.round(data[f].R));
+    let shift=null;
+    for(let s=80;s>=-20;s--){
+      let unfav=0,mx=0;
+      for(const f of MAIN){const d=REF[f]+s-Rint[f];if(d>0){unfav+=d;mx=Math.max(mx,d);}}
+      if(unfav<=32.0&&mx<=8){shift=s;break;}
+    }
+    if(shift===null){$('rwVal').textContent='—';return;}
+    const Rw=REF[500]+shift;
+    function specCorr(spec,set){let sum=0;set.forEach(f=>{if(data[f].R!=null)sum+=Math.pow(10,(spec[f]-data[f].R)/10);});return Math.round(-10*log10(sum))-Rw;}
+    const C=specCorr(SPEC_C,MAIN),Ctr=specCorr(SPEC_CTR,MAIN);
+    const haveLow=LOW.every(f=>data[f].R!=null);
+    let C50=null,Ctr50=null;
+    if(haveLow){const full=[...LOW,...MAIN];C50=specCorr(SPEC_C,full);Ctr50=specCorr(SPEC_CTR,full);}
+    $('rwVal').textContent=Rw;
+    $('cVal').textContent=(C>=0?'+':'')+C;$('ctrVal').textContent=(Ctr>=0?'+':'')+Ctr;
+    $('cExt').textContent=haveLow?`${C50>=0?'+':''}${C50} / ${Ctr50>=0?'+':''}${Ctr50}`:'需填 50–80 Hz';
+    const lab=qtype==='DnT'?'DnT,w':qtype==='Rp'?"R′w":'Rw';
+    $('rwExpr').innerHTML=`单值表达：<code>${lab} (C; Ctr) = ${Rw} (${C>=0?'+':''}${C}; ${Ctr>=0?'+':''}${Ctr}) dB</code>。`+(haveLow?` 含扩展低频 (C₅₀; Ctr,₅₀) = (${C50>=0?'+':''}${C50}; ${Ctr50>=0?'+':''}${Ctr50})。`:'');
+    let unfavSum=0;MAIN.forEach(f=>{const d=REF[f]+shift-Rint[f];if(d>0)unfavSum+=d;});
+    showWarn(`拟合不利偏差之和 = ${fmt(unfavSum,1)} dB（限值 32.0）。`,'ok');
+    drawChart(data,shift);
+    lastResult={data,Rw,C,Ctr,C50,Ctr50,haveLow,shift,unfavSum,lab};
+  };
+  let lastResult=null;
+
+  window.insExport=function(){
+    if(!lastResult){alert('请先填齐 100–3150 Hz 全部频带数据，拟合出单值后再导出。');return;}
+    const r=lastResult;
+    const qtypeNm={R:'实验室隔声量 R',Rp:'现场表观隔声量 R′',DnT:'标准化声压级差 DnT'}[qtype];
+    const rows=BANDS.filter(f=>r.data[f].R!=null).map(f=>{
+      const d=r.data[f];
+      return `<tr><td>${f}</td><td>${d.L1!=null?fmt(d.L1,1):'—'}</td><td>${d.L2!=null?fmt(d.L2,1):'—'}</td><td>${d.T!=null&&!isNaN(d.T)?fmt(d.T,2):'—'}</td><td>${fmt(d.R,1)}</td></tr>`;
+    }).join('');
+    const tableHTML=`<h2 class="rsec" style="font-size:13px">各频带数据与隔声量</h2><table><thead><tr><th>频带 Hz</th><th>L̄₁ dB</th><th>L̄₂ dB</th><th>T s</th><th>${qtype==='DnT'?'DnT':'R'} dB</th></tr></thead><tbody>${rows}</tbody></table>`;
+    const results=[
+      [r.lab,String(r.Rw),'dB'],
+      ['C（粉噪修正）',(r.C>=0?'+':'')+r.C,''],
+      ['Ctr（交通噪声修正）',(r.Ctr>=0?'+':'')+r.Ctr,''],
+    ];
+    if(r.haveLow)results.push(['扩展低频 C₅₀ / Ctr,₅₀',`${r.C50>=0?'+':''}${r.C50} / ${r.Ctr50>=0?'+':''}${r.Ctr50}`,'']);
+    results.push(['拟合不利偏差之和',fmt(r.unfavSum,1),'dB（限值32.0）']);
+    exportReport({
+      title:'隔声量评定报告',
+      inputs:[
+        ['隔声量类型',qtypeNm],
+        ['试件面积 S',$('p_S').value+' m²'],
+        ['收声室体积 V',$('p_V').value+' m³'],
+        ['发声室测点数',$('p_n1').value],
+        ['收声室测点数',$('p_n2').value],
+        ['单值表达',`${r.lab} (C; Ctr) = ${r.Rw} (${r.C>=0?'+':''}${r.C}; ${r.Ctr>=0?'+':''}${r.Ctr}) dB`],
+      ],
+      results,
+      tableHTML,
+      svg:grabSVG('chartIns'),
+      notes:'依据 GB/T 19889 / ISO 10140 测量，GB/T 50121 / ISO 717-1 单值评定。参考曲线按1dB步距上移至100–3150Hz范围16频带不利偏差之和≤32dB且任一≤8dB的最高位置，Rw取此时参考曲线在500Hz的值。结果为工程估算，不替代具备计量资质的检测。'
+    });
+  };
+
+  function drawChart(data,shift){
+    const W=760,H=380,mL=44,mR=14,mT=16,mB=46,pw=W-mL-mR,ph=H-mT-mB,yMin=0,yMax=80,xs=BANDS,n=xs.length;
+    const xAt=i=>mL+(n>1?pw*i/(n-1):0),yAt=v=>mT+ph-(v-yMin)/(yMax-yMin)*ph;
+    let s='';
+    for(let v=0;v<=80;v+=10){const y=yAt(v);s+=`<line x1="${mL}" y1="${y}" x2="${W-mR}" y2="${y}" stroke="#e7eef1" stroke-width="1"/><text x="${mL-6}" y="${y+4}" font-size="10" fill="#9bb0ba" text-anchor="end">${v}</text>`;}
+    xs.forEach((f,i)=>{if([50,100,250,500,1000,2000,4000,5000].includes(f))s+=`<text x="${xAt(i)}" y="${H-mB+16}" font-size="10" fill="#9bb0ba" text-anchor="middle">${f}</text>`;});
+    s+=`<text x="${mL+pw/2}" y="${H-6}" font-size="11" fill="#67808c" text-anchor="middle">1/3 倍频程中心频率 (Hz)</text>`;
+    s+=`<text x="14" y="${mT+ph/2}" font-size="11" fill="#67808c" text-anchor="middle" transform="rotate(-90 14 ${mT+ph/2})">隔声量 (dB)</text>`;
+    let segMain=[],segLow=[];
+    xs.forEach((f,i)=>{const R=data[f]&&data[f].R;if(R==null)return;const pt=[xAt(i),yAt(R)];isLow(f)?segLow.push(pt):segMain.push(pt);});
+    if(segMain.length){s+=`<path d="M${segMain.map(p=>p.join(',')).join(' L')}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;segMain.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--accent)"/>`);}
+    if(segLow.length){let pts=[...segLow];if(segMain.length)pts.push(segMain[0]);s+=`<path d="M${pts.map(p=>p.join(',')).join(' L')}" fill="none" stroke="var(--warm)" stroke-width="2.2"/>`;segLow.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--warm)"/>`);}
+    if(shift!==null){let refPts=[];MAIN.forEach(f=>{const i=xs.indexOf(f);refPts.push([xAt(i),yAt(REF[f]+shift)]);});
+      s+=`<path d="M${refPts.map(p=>p.join(',')).join(' L')}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-dasharray="6 4"/>`;
+      const i5=xs.indexOf(500);s+=`<circle cx="${xAt(i5)}" cy="${yAt(REF[500]+shift)}" r="4.5" fill="none" stroke="var(--blue)" stroke-width="2"/><text x="${xAt(i5)+8}" y="${yAt(REF[500]+shift)-8}" font-size="11" fill="var(--blue)" font-weight="700">Rw=${REF[500]+shift}</text>`;}
+    $('chartIns').innerHTML=s;
+  }
+
+  window.insClear=function(w){document.querySelectorAll(`#t${w} input`).forEach(x=>x.value='');insRecalc();};
+  window.insDemo=function(w){
+    const d1={50:78,63:80,80:82,100:85,125:86,160:87,200:88,250:89,315:90,400:90,500:91,630:91,800:92,1000:92,1250:92,1600:91,2000:91,2500:90,3150:90,4000:89,5000:88};
+    const d2={50:55,63:55,80:54,100:52,125:50,160:48,200:46,250:44,315:42,400:40,500:38,630:36,800:35,1000:33,1250:32,1600:31,2000:30,2500:30,3150:29,4000:29,5000:28};
+    const dT={50:1.8,63:1.7,80:1.6,100:1.5,125:1.4,160:1.3,200:1.2,250:1.1,315:1.05,400:1.0,500:.95,630:.9,800:.88,1000:.85,1250:.82,1600:.8,2000:.78,2500:.75,3150:.72,4000:.7,5000:.68};
+    const src=w===1?d1:d2;
+    document.querySelectorAll(`input[data-w="${w}"]`).forEach(x=>{const f=x.dataset.f,p=parseInt(x.dataset.p);x.value=fmt(src[f]+((p*37)%7-3)*0.5,1);});
+    if(w===2)document.querySelectorAll('input[data-T]').forEach(x=>x.value=dT[x.dataset.t]);
+    insRecalc();
+  };
+
+  /* ===== 批量粘贴导入 ===== */
+  window.insPasteToggle=function(which){
+    const box=$('ins_pasteBox'+which);box.style.display=(box.style.display==='none')?'block':'none';
+    $('ins_pasteMsg'+which).textContent='';
+  };
+  window.insPasteApply=function(which){
+    const text=$('ins_pasteArea'+which).value;
+    const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+    if(!lines.length){$('ins_pasteMsg'+which).textContent='未检测到数据。';return;}
+    const n=parseInt($(which===1?'p_n1':'p_n2').value)||1;
+    let filled=0,bad=0;
+    lines.forEach((line,idx)=>{
+      if(idx>=BANDS.length)return;
+      const f=BANDS[idx];
+      const nums=line.split(/[\t,，\s]+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+      if(!nums.length){bad++;return;}
+      for(let p=1;p<=n;p++){
+        const inp=document.querySelector(`input[data-w="${which}"][data-f="${f}"][data-p="${p}"]`);
+        if(inp&&nums[p-1]!=null&&!isNaN(nums[p-1]))inp.value=nums[p-1];
+      }
+      if(which===2 && nums.length>n){
+        const tInp=document.querySelector(`input[data-T="${f}"]`);
+        if(tInp)tInp.value=nums[nums.length-1];
+      }
+      filled++;
+    });
+    $('ins_pasteMsg'+which).textContent=`已解析 ${filled} 个频带${bad?`，${bad} 行无法识别已跳过`:''}。`;
+    insRecalc();
+  };
+
+  // 初始化：构建发声室/收声室表格 → 填入示例数据 → 明确重算单值与曲线
+  insRebuild();
+  insDemo(1);
+  insDemo(2);
+  insRecalc();
+
+})();
+
+</script>
+</body>
+</html>
