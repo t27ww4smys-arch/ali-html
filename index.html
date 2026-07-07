@@ -188,10 +188,11 @@
   footer{text-align:center;color:var(--muted);font-size:12px;margin-top:40px;line-height:1.7}
 
   /* 直达声场 */
-  .ds-layout{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-top:16px}
+  .ds-layout{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-top:16px;align-items:start}
   @media(max-width:780px){.ds-layout{grid-template-columns:1fr}}
+  .ds-left{display:flex;flex-direction:column;gap:16px;min-width:0}
   .ds-main{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
-  .ds-canvas{width:100%;height:460px;display:block;background:#0d1b2a;cursor:crosshair}
+  .ds-canvas{width:100%;aspect-ratio:1/1;max-height:78vh;display:block;background:#0d1b2a;cursor:crosshair}
   .ds-cbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
   .ds-cbar-grad{flex:none;width:140px;height:10px;border-radius:5px;background:linear-gradient(90deg,#0d1b2a,#285aa0,#0fb58e,#e6c83c,#dc4632)}
   .ds-side{display:flex;flex-direction:column;gap:12px}
@@ -227,6 +228,7 @@
         <button data-mod="directfield"><span class="nav-ic">📡</span><span>声场模拟</span></button>
         <button data-mod="signal"><span class="nav-ic">〜</span><span>信号发生器</span></button>
         <button data-mod="insulation"><span class="nav-ic">🧱</span><span>隔声测量</span></button>
+        <button data-mod="rtadjust"><span class="nav-ic">🎯</span><span>混响调整</span></button>
       </nav>
       <div class="side-foot">
         <details>
@@ -240,14 +242,17 @@
     <main class="content">
       <div class="wrap">
         <!-- ========== 模块占位，脚本注入 ========== -->
-        <div class="module active" id="mod-unitdb"><div class="modhead"><h2>分贝运算 / 单位换算</h2><p>声压级能量叠加与平均、背景噪声修正、声压/声强/声功率与分贝的双向换算</p></div>
+        <div class="module active" id="mod-unitdb"><div class="modhead"><h2>分贝 / 单位换算</h2><p>按用途分为四组：分贝运算 · 级↔物理量 · 声功率求解 · 电声与电平</p></div>
 
 <nav class="tabs" id="ud-tabs">
-  <button class="tab active" data-t="db">分贝运算</button>
-  <button class="tab" data-t="conv">单位换算</button>
+  <button class="tab active" data-t="db">① 分贝运算</button>
+  <button class="tab" data-t="lvl">② 级 ↔ 物理量</button>
+  <button class="tab" data-t="power">③ 声功率求解</button>
+  <button class="tab" data-t="elec">④ 电声 / 电平</button>
 </nav>
 
 <section class="panel active" data-p="db">
+  <p class="hint" style="margin:0 0 4px">多个声级的能量叠加/平均，以及从含背景的读数中扣除本底。</p>
   <div class="card">
     <h3>分贝叠加 / 平均</h3>
     <p class="desc">把多个声压级（dB）能量叠加或求能量平均。用于合并多个声源或多次测量。</p>
@@ -272,7 +277,8 @@
   </div>
 </section>
 
-<section class="panel" data-p="conv">
+<section class="panel" data-p="lvl">
+  <p class="hint" style="margin:0 0 4px">三种基本物理量与其"级(dB)"的双向换算。基准：p₀=20µPa · I₀=1pW/m² · W₀=1pW。</p>
   <div class="card">
     <h3>声压 ↔ 分贝 (SPL)</h3>
     <p class="desc">基准声压 p₀ = 20 µPa。<code>L_p = 20·log₁₀(p/20µPa)</code></p>
@@ -300,6 +306,10 @@
       <div class="field"><label>声功率 W (W) <span class="note">物理量，自动换算</span></label><input type="text" id="c_W" value="1.0×10⁻⁴" oninput="powToDb()"></div>
     </div>
   </div>
+</section>
+
+<section class="panel" data-p="power">
+  <p class="hint" style="margin:0 0 4px">由声强或声压反求声源声功率级 L_W——声强法(面积)与自由场法(距离/环境 Q)两种。</p>
   <div class="card">
     <h3>声强级 ↔ 声功率级（经测量面积）</h3>
     <p class="desc">声功率 = 声强 × 包络声源的测量面积 S，对应级的关系 <code>L_W = L_I + 10·log₁₀(S)</code>。声强法测声功率（GB/T 16404 / ISO 9614）正是在包络声源的测量面 S 上测平均声强，再乘面积得声功率。</p>
@@ -336,6 +346,10 @@
       此为<b>自由声场点声源</b>理想模型：仅含直达声、无反射混响。室内远处声压级受混响声场主导，需用房间常数另算（混响半径外趋于稳定，不再随距离下降）。全消声室最接近此模型；半消声室适用于置于硬反射地面的声源。
     </div>
   </div>
+</section>
+
+<section class="panel" data-p="elec">
+  <p class="hint" style="margin:0 0 4px">传声器灵敏度↔电压（SPL/dBV/µbar），以及通用的幅值比↔分贝换算。</p>
 
   <div class="card">
     <h3>百分比 ↔ 分贝（幅值比）</h3>
@@ -471,15 +485,32 @@
 
 <div class="card">
   <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0">
-    <b>直达声场模型</b>（同 EASE Focus 思路）：只计算声源直接辐射的复数声压叠加 <code>p = Σ (Aᵢ/rᵢ)·e^(−jkrᵢ+jφᵢ)</code>，<b>不含反射与混响</b>。能真实呈现阵列的主瓣、旁瓣、栅瓣、干涉条纹与聚焦——相控原理与雷达/航天相控阵同源。各单元为理想点源，未含实际换能器指向性。理论依据见下方"模型依据与文献"。
+    <b>直达声场模型</b>（同 EASE Focus 思路）：声源直接辐射的复数声压叠加 <code>p = Σ Dᵢ(θ)·(Aᵢ/rᵢ)·e^(−jkrᵢ+jφᵢ)</code>，<b>不含反射与混响</b>。所有阵列单元按<b>真实三维坐标</b>建模（三维阵列的行沿竖直 z 轴堆叠），显示为可选的<b>水平/垂直切面</b>，每个切面点按三维距离 rᵢ=√(Δx²+Δy²+Δz²) 叠加全部单元。单元指向性 Dᵢ(θ) 可选理想点源 / 障板活塞源（ka 相关）/ 心形；支持按单元 SPL@1m 的<b>绝对声压级标定</b>。理论依据见下方"模型依据与文献"。
   </div>
 </div>
 
 <div class="ds-layout">
+  <div class="ds-left">
   <div class="ds-main">
-    <canvas id="dsCanvas" class="ds-canvas"></canvas>
-    <div class="ds-cbar"><span>低</span><div class="ds-cbar-grad"></div><span>高 dB</span><span id="ds_readout" style="margin-left:auto;font-variant-numeric:tabular-nums"></span></div>
+    <div style="position:relative">
+      <canvas id="dsCanvas" class="ds-canvas"></canvas>
+      <canvas id="dsOrient" width="180" height="158" style="position:absolute;top:10px;right:10px;background:rgba(10,16,22,.80);border:1px solid var(--line);border-radius:10px;cursor:grab" title="拖拽旋转定位视图"></canvas>
+    </div>
+    <div class="ds-cbar"><span id="ds_cbLo">低</span><div class="ds-cbar-grad"></div><span id="ds_cbHi">高 dB</span><span id="ds_readout" style="margin-left:auto;font-variant-numeric:tabular-nums"></span></div>
   </div>
+  <div class="card" style="margin-top:0">
+    <h3>方向性图样（阵列远场）</h3>
+    <p class="desc">远场扫描各角度的归一化<b>相对声压级</b>（主瓣峰值=0dB，向内每环 −10dB）——读主瓣指向、−6dB 波束宽度、旁瓣与栅瓣。扫描平面随上方"观察切面"切换（水平/垂直面）；与近场切面是两种视角。</p>
+    <svg class="chart" id="dsPolar" viewBox="0 0 640 352" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="results" style="margin-top:8px">
+      <div class="rcell spec"><div class="lbl">主瓣方向</div><div class="big" style="font-size:22px"><span id="ds_mainDir">—</span> <span class="u">°</span></div></div>
+      <div class="rcell"><div class="lbl">−6dB 波束宽度</div><div class="big" style="font-size:22px"><span id="ds_bw">—</span> <span class="u">°</span></div></div>
+      <div class="rcell"><div class="lbl">最大旁瓣电平</div><div class="big" style="font-size:22px"><span id="ds_sll">—</span> <span class="u">dB</span></div></div>
+      <div class="rcell"><div class="lbl">栅瓣风险</div><div class="big" style="font-size:18px"><span id="ds_grating">—</span></div></div>
+    </div>
+    <p class="hint">栅瓣判据：单元间距 d &gt; λ/2（偏转阵）或 d &gt; λ（静态宽边阵）时出现栅瓣。波束宽度随单元数增多、孔径增大而变窄。</p>
+  </div>
+  </div><!-- /ds-left -->
   <div class="ds-side">
     <div class="ds-group">
       <label>声源 / 阵列类型</label>
@@ -548,19 +579,75 @@
         <input type="range" class="slider" id="ds_arcInc" min="10" max="160" value="60" step="5" oninput="dsRingUpd();dsRender()">
       </div>
       <div id="ds_3dRowBox" style="display:none">
-        <label style="margin-top:8px">三维阵列排数（纵深分层）<span class="bigval" id="ds_rowsLbl" style="font-size:14px">3</span> <span class="note">列数沿用上方"阵列单元数"</span></label>
+        <label style="margin-top:8px">三维阵列行数（<b>竖直堆叠</b>）<span class="bigval" id="ds_rowsLbl" style="font-size:14px">3</span> <span class="note">行沿竖直 z 轴堆叠、行距=单元间距；列数沿用上方"阵列单元数"</span></label>
         <input type="range" class="slider" id="ds_rows" min="2" max="8" value="3" step="1" oninput="dsRingUpd();dsRender()">
       </div>
       <label style="margin-top:8px">测试件宽 × 高 <span class="bigval" id="ds_twLbl" style="font-size:13px">1.5</span> × <span class="bigval" id="ds_thLbl" style="font-size:13px">1.5</span> m <span class="note">被测单元(UUT)尺寸</span></label>
       <input type="range" class="slider" id="ds_tw" min="0.3" max="6" value="1.5" step="0.1" oninput="dsRingUpd();dsRender()">
       <input type="range" class="slider" id="ds_th" min="0.3" max="6" value="1.5" step="0.1" oninput="dsRingUpd();dsRender()" style="margin-top:4px">
-      <p class="note" style="margin-top:6px">单元数沿用上方"阵列单元数"滑块。受限于二维水平切面，"三维/多排"在此建模为沿传播方向（纵深）分层的多排声源，并非真实竖直维；均匀性在测试件水平面上采样评估。真实三维声场需专业软件或实测。</p>
+      <p class="note" style="margin-top:6px">三维阵列的行为<b>真实竖直堆叠</b>（z 轴），切面场按三维距离 √(Δx²+Δy²+Δz²) 计算所有单元贡献；均匀性在测试件<b>整个受声面（宽×高）</b>上三维采样评估。可切换"垂直切面"查看竖直方向覆盖。</p>
     </div>
 
     <div class="ds-group" id="ds_multiBox" style="display:none">
       <label>声源（点击画布添加，拖动移动）</label>
       <div id="ds_srcList" style="font-size:12px;color:var(--muted)"></div>
       <button class="btn ghost tiny" onclick="dsClearSrc()" style="margin-top:6px">清空声源</button>
+    </div>
+
+    <div class="ds-group" id="ds_mimoBox" style="display:none">
+      <label>自动 MIMO 均匀化（逐频最小二乘）</label>
+      <p class="note" style="margin:2px 0 6px">对 UUT 受声面求解各单元最优<b>复权重（幅度+相位）</b>，把声场整形为均匀平面波——即真实 DFAT 的 MIMO 控制原理（Tikhonov 正则最小二乘）。</p>
+      <button class="btn small" onclick="dsMimoSolve()" style="width:100%;margin-bottom:6px">🎛 求解 MIMO 权重（当前频率）</button>
+      <label class="ds-check"><input type="checkbox" id="ds_mimoOn" onchange="dsMimoToggle()"> 应用 MIMO 权重（关闭=均匀驱动对照）</label>
+      <p class="note" id="ds_mimoInfo" style="margin-top:6px">未求解。点上方按钮生成权重（会随频率自动重解）。</p>
+    </div>
+
+    <div class="ds-group" id="ds_trimBox" style="display:none">
+      <label>单元微调（手动 MIMO）<span class="note" id="ds_trimCount"></span></label>
+      <p class="note" style="margin:2px 0 6px">在声场图上<b>点击单元</b>选中，独立调其幅度/相位——预演 MIMO 逐通道整形对场型/均匀性的影响。</p>
+      <div id="ds_trimSel" style="font-size:12.5px;color:var(--accent);font-weight:600;margin-bottom:4px">未选中单元</div>
+      <label>幅度 <span class="bigval" id="ds_trimGLbl" style="font-size:13px">0</span> dB</label>
+      <input type="range" class="slider" id="ds_trimG" min="-12" max="12" value="0" step="0.5" oninput="dsTrimUpd()">
+      <label style="margin-top:6px">相位 <span class="bigval" id="ds_trimPLbl" style="font-size:13px">0</span> °</label>
+      <input type="range" class="slider" id="ds_trimP" min="-180" max="180" value="0" step="5" oninput="dsTrimUpd()">
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn ghost tiny" onclick="dsTrimReset(false)" style="flex:1">该单元复位</button>
+        <button class="btn ghost tiny" onclick="dsTrimReset(true)" style="flex:1">全部复位</button>
+      </div>
+    </div>
+
+    <div class="ds-group">
+      <label>单元模型（指向性）</label>
+      <select id="ds_elemModel" onchange="dsRender()" style="margin-bottom:8px">
+        <option value="mono">理想点源（全向）</option>
+        <option value="piston">障板活塞源 2J₁(ka·sinθ)/(ka·sinθ)</option>
+        <option value="card">心形指向</option>
+      </select>
+      <div id="ds_pistonBox" style="display:none">
+        <label>振膜有效直径 <span class="bigval" id="ds_pistDLbl" style="font-size:14px">0.25</span> m <span class="note">ka 随频率↑指向性变窄</span></label>
+        <input type="range" class="slider" id="ds_pistD" min="0.05" max="0.6" value="0.25" step="0.01" oninput="dsRender()">
+      </div>
+      <label style="margin-top:8px">标度</label>
+      <select id="ds_lvlMode" onchange="dsRender()" style="margin-bottom:8px">
+        <option value="rel">相对峰值 (0 dB=最大)</option>
+        <option value="abs">绝对 SPL（按单元级标定）</option>
+      </select>
+      <div id="ds_splBox" style="display:none">
+        <label>单元 SPL@1m <span class="bigval" id="ds_spl1mLbl" style="font-size:14px">100</span> dB <span class="note">单只单元自由场 1m 处声压级</span></label>
+        <input type="range" class="slider" id="ds_spl1m" min="70" max="140" value="100" step="1" oninput="dsRender()">
+      </div>
+    </div>
+
+    <div class="ds-group">
+      <label>观察切面</label>
+      <select id="ds_slice" onchange="dsRender()" style="margin-bottom:8px">
+        <option value="h">水平切面 XY（俯视）</option>
+        <option value="v">垂直切面 YZ（侧视，x=0）</option>
+      </select>
+      <div id="ds_sliceZBox">
+        <label>切面高度 z <span class="bigval" id="ds_sliceZLbl" style="font-size:14px">0.0</span> m <span class="note">相对阵列中心</span></label>
+        <input type="range" class="slider" id="ds_sliceZ" min="-3" max="3" value="0" step="0.1" oninput="dsRender()">
+      </div>
     </div>
 
     <div class="ds-group">
@@ -582,18 +669,6 @@
   </div>
 </div>
 
-<div class="card">
-  <h3>方向性图样（阵列远场）</h3>
-  <p class="desc">表达<b>阵列整体的方向性</b>：在远场（观测距离远大于阵列孔径，此处取 1000 m）扫描各角度，得到归一化的<b>相对声压级</b>。同心圆刻度为相对 dB，主瓣峰值为 0 dB 基准，向内每圈递减。由此直观读出主瓣指向、波束宽度、旁瓣与栅瓣。注意这是远场方向性，与上方近场二维声场切面（含距离衰减的绝对分布）是两种不同视角。</p>
-  <svg class="chart" id="dsPolar" viewBox="0 0 720 360" preserveAspectRatio="xMidYMid meet"></svg>
-  <div class="results" style="margin-top:8px">
-    <div class="rcell spec"><div class="lbl">主瓣方向</div><div class="big" style="font-size:22px"><span id="ds_mainDir">—</span> <span class="u">°</span></div></div>
-    <div class="rcell"><div class="lbl">−6dB 波束宽度</div><div class="big" style="font-size:22px"><span id="ds_bw">—</span> <span class="u">°</span></div></div>
-    <div class="rcell"><div class="lbl">最大旁瓣电平</div><div class="big" style="font-size:22px"><span id="ds_sll">—</span> <span class="u">dB</span></div></div>
-    <div class="rcell"><div class="lbl">栅瓣风险</div><div class="big" style="font-size:18px"><span id="ds_grating">—</span></div></div>
-  </div>
-  <p class="hint">栅瓣判据：单元间距 d &gt; λ/2 时高频出现栅瓣（能量泄漏到非预期方向）。波束宽度随单元数增多、孔径增大而变窄。这些是阵列/相控阵设计的核心权衡。</p>
-</div>
 
 <div class="card" id="ds_dfatCard" style="display:none">
   <h3>DFAT 声场均匀性评估</h3>
@@ -603,6 +678,9 @@
     <div class="rcell"><div class="lbl">声压级极差</div><div class="big" style="font-size:22px"><span id="ds_dfatRange">—</span> <span class="u">dB</span></div></div>
     <div class="rcell"><div class="lbl">测试区域均值</div><div class="big" style="font-size:22px"><span id="ds_dfatMean">—</span> <span class="u">dB(相对)</span></div></div>
   </div>
+  <p class="desc" style="margin:14px 0 6px"><b>UUT 受声面声压分布</b>（正对阵列视角：横=宽 x，纵=高 z；这就是被测件表面实际"看到"的声场）</p>
+  <canvas id="dsUutMap" style="width:100%;max-width:440px;height:270px;display:block;border:1px solid var(--line);border-radius:10px;background:#0d1b2a"></canvas>
+  <p class="hint" id="dsUutHint"></p>
   <p class="desc" style="margin:14px 0 6px"><b>分倍频带均匀性</b>（125–4000Hz 各自评估，固定阵列布局，仅频率变化）</p>
   <table class="grid" id="dfatBandTable">
     <thead><tr><th>频带</th><th>极差 (dB)</th><th>±3dB 容差判定</th></tr></thead>
@@ -623,10 +701,13 @@
       <tr><td>相控阵波束偏转 φᵢ=−k·xᵢ·sinθ</td><td>延迟/相位加权实现波束指向；与雷达相控阵同源。Van Trees, <i>Optimum Array Processing</i>；连续曲线/相控线源理论 Acta Acustica 7:48 (2023)</td></tr>
       <tr><td>栅瓣判据 d &gt; λ/2</td><td>均匀间距阵列超过半波长间距出现栅瓣（空间采样混叠，类比奈奎斯特）。线源工作要求间距 &lt; λ/2</td></tr>
       <tr><td>聚焦阵列相位补偿 φᵢ=k·rᵢ(焦点)</td><td>近场聚焦：各单元相位补偿使焦点处同相叠加。近场声学阵列聚焦原理</td></tr>
-      <tr><td>DFAT 平面/三维阵列均匀性评估（±3dB）</td><td>扬声器阵列直接场声学测试，测试区声压级均匀性容差；推荐平面传声器阵列评估、分水平/垂直面布置。NASA-HDBK-7010 "Direct Field Acoustic Testing (DFAT)", 2015；容差见 NASA-STD-7001b §4.1；MIMO 控制典型 ±3dB</td></tr>
+      <tr><td>DFAT 平面/三维阵列均匀性评估（±3dB）</td><td>扬声器阵列直接场声学测试，测试区声压级均匀性容差；推荐平面传声器阵列评估、分水平/垂直面布置。NASA-HDBK-7010 "Direct Field Acoustic Testing (DFAT)", 2015；容差见 NASA-STD-7001b §4.1；MIMO 控制典型 ±3dB；场均匀性/驻波研究见 JPL（Kolaini 等）系列 DFAT 论文（出处待核）</td></tr>
+      <tr><td>三维点源叠加与切面显示 rᵢ=√(Δx²+Δy²+Δz²)</td><td>球面波 1/r 扩散、任意三维分布点源线性叠加。Kinsler, Frey, Coppens &amp; Sanders, <i>Fundamentals of Acoustics</i> (4th ed.)；Pierce, <i>Acoustics</i></td></tr>
+      <tr><td>障板活塞源指向性 D(θ)=2J₁(ka·sinθ)/(ka·sinθ)</td><td>无限障板圆形活塞的经典远场方向性，J₁ 为一阶贝塞尔函数，a 为振膜半径。Kinsler &amp; Frey §7.4；Beranek, <i>Acoustics</i>。用于近似真实扬声器高频变窄的指向性</td></tr>
+      <tr><td>绝对 SPL 标定（单元 SPL@1m + 1/r 定律）</td><td>自由场点源距离衰减 20·log₁₀(r/r₀)；多源相干叠加后取 20·log₁₀|Σp|。同上教材；与扩声系统 SPL 预测（EASE 等）同思路</td></tr>
     </tbody>
   </table>
-  <p class="hint">说明：本工具采用<b>理想点源 + 二维复数叠加</b>的简化模型（与 EASE Focus 的直达声场计算同一思路），用于教学演示与方案预研。未包含真实换能器指向性、波导效应、互耦、地面/边界反射；精确工程预测需 CATT-Acoustic、EASE、AFMG 等专业软件或实测验证。</p>
+  <p class="hint">说明：本工具为<b>三维坐标点源（可选活塞/心形指向性）+ 相干复数叠加</b>的直达场模型，显示水平/垂直切面，用于教学与方案预研。未包含：换能器实测指向球、波导/号角、单元互耦、地面与边界反射、空气吸收。精确工程预测需 CATT-Acoustic、EASE、AFMG 等专业软件或实测验证。文献精确条款/DOI 待联网核对后补全。</p>
 </div>
 </div>
     <div class="module" id="mod-signal"><div class="modhead"><h2>信号发生器</h2><p>声学测量常用激励信号：正弦、白/粉/棕噪、对数/线性扫频、猝发音、MLS，含实时频谱示意</p></div>
@@ -858,6 +939,133 @@
     <span><i style="background:var(--warm)"></i>50–80 Hz 扩展低频段</span>
   </div>
   <p class="hint">参考曲线按 1 dB 步距上移，直到 100–3150 Hz 范围 16 个频带的不利偏差之和 ≤ 32.0 dB 且任一频带不利偏差 ≤ 8 dB（取允许的最高位置）。Rw 即此时参考曲线在 500 Hz 的值。</p>
+</div>
+</div>
+
+    <div class="module" id="mod-rtadjust"><div class="modhead"><h2>混响时间调整（现场指导）</h2><p>实测/空房间混响 → 反推现有吸声量 → 推荐吸声体与低频陷阱的材质·尺寸·块数·安装位置 → 三维显示与达标验算</p></div>
+
+<div class="card">
+  <div class="notebox" style="background:#16242e;border-color:#2a4055;color:#7eb0f0">
+    <b>原理</b>：用现场实测各频带混响反推房间现有总吸声量 <code>A = 0.161·V/T</code>（无需已知水泥吸声系数），再算达到目标混响所需补充吸声 <code>ΔA</code>，换算成吸声板/低频陷阱块数并给安装位置。目标混响按 <b>GB/T 19889</b> 框架取值（默认上限 2.0s / 下限 1.0s，可改）。扩散板主要改善声场扩散、吸声很小，最终扩散性须实测验证。
+  </div>
+</div>
+
+<div class="card">
+  <h3><span class="step">1</span>房间与目标</h3>
+  <div class="seg" id="rta_roomSeg">
+    <button class="on" data-r="source">发声室</button>
+    <button data-r="receive">收声室</button>
+  </div>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">
+    <div class="field"><label>长 L (m)</label><input type="number" id="rta_L" value="5.0" step="0.1" oninput="rtaRecalc()"></div>
+    <div class="field"><label>宽 W (m)</label><input type="number" id="rta_W" value="4.0" step="0.1" oninput="rtaRecalc()"></div>
+    <div class="field"><label>高 H (m)</label><input type="number" id="rta_H" value="3.0" step="0.1" oninput="rtaRecalc()"></div>
+    <div class="field"><label>目标上限 (s) <span class="note">超过=超标</span></label><input type="number" id="rta_Thi" value="2.0" step="0.1" oninput="rtaRecalc()"></div>
+    <div class="field"><label>目标下限 (s) <span class="note">低于=过吸</span></label><input type="number" id="rta_Tlo" value="1.0" step="0.1" oninput="rtaRecalc()"></div>
+  </div>
+  <p class="hint" id="rta_roomStats"></p>
+  <p class="hint">收声室体积建议 ≥50 m³、两室体积差 ≥10%（GB/T 19889 / ISO 10140-5）。目标混响以你适用条款/评审要求为准，可覆盖默认。</p>
+</div>
+
+<div class="card">
+  <h3><span class="step">2</span>当前混响</h3>
+  <div class="seg" id="rta_modeSeg">
+    <button class="on" data-m="meas">现场实测 RT 输入</button>
+    <button data-m="empty">空房间（裸水泥）估算</button>
+  </div>
+  <div id="rta_measBox">
+    <p class="desc">填入各倍频带实测混响时间 T₆₀ (s)。这是最准的入口——直接反推房间现有吸声量。</p>
+    <div class="tablewrap"><table class="grid" id="rta_measTable"></table></div>
+    <button class="btn ghost tiny" onclick="rtaFillTypical()" style="margin-top:8px">填入典型裸水泥示例</button>
+  </div>
+  <div id="rta_emptyBox" style="display:none">
+    <p class="desc">无实测时，按各表面材质估算当前混响（Sabine）。裸水泥房间混响通常很长。</p>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+      <div class="field"><label>地面</label><select id="rta_sfFloor" onchange="rtaRecalc()"></select></div>
+      <div class="field"><label>墙面（4 面）</label><select id="rta_sfWall" onchange="rtaRecalc()"></select></div>
+      <div class="field"><label>顶面</label><select id="rta_sfCeil" onchange="rtaRecalc()"></select></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3><span class="step">3</span>处理材料</h3>
+  <p class="desc"><b>以宽频吸声为主</b>（厚/带空腔的吸声板本身也吸一部分低频），低频陷阱仅<b>少量补充</b>（一般隔声实验室不宜堆大量角落陷阱），扩散板改善声场扩散。点"自动建议"按中高频缺口定宽频板、低频按上限少量配陷阱。</p>
+  <div class="grid2">
+    <div class="field"><label>宽频吸声板材质</label><select id="rta_absType" onchange="rtaAbsCustomUpd();rtaRecalc()"></select></div>
+    <div class="field"><label>单块面积 (m²) <span class="note">如 1.2×0.6=0.72</span></label><input type="number" id="rta_absArea" value="0.72" step="0.01" oninput="rtaRecalc()"></div>
+  </div>
+  <div id="rta_absCustomBox" style="display:none;margin:-4px 0 10px">
+    <label style="font-size:11px;color:var(--muted)">自定义吸声系数 α（125–4000Hz）</label>
+    <div class="grid2" id="rta_absCustomInputs" style="grid-template-columns:repeat(6,1fr);gap:5px"></div>
+  </div>
+  <div class="field"><label>宽频板数量 <span class="bigval" id="rta_absNLbl" style="font-size:14px">0</span> 块</label>
+    <input type="range" class="slider" id="rta_absN" min="0" max="120" value="0" step="1" oninput="rtaRecalc()"></div>
+
+  <div class="grid2" style="margin-top:10px">
+    <div class="field"><label>低频陷阱类型</label><select id="rta_bassType" onchange="rtaRecalc()"></select></div>
+    <div class="field"><label>单元等效面积 (m²)</label><input type="number" id="rta_bassArea" value="0.5" step="0.01" oninput="rtaRecalc()"></div>
+  </div>
+  <div class="field"><label>低频陷阱数量 <span class="bigval" id="rta_bassNLbl" style="font-size:14px">0</span> 个</label>
+    <input type="range" class="slider" id="rta_bassN" min="0" max="40" value="0" step="1" oninput="rtaRecalc()"></div>
+
+  <div class="grid2" style="margin-top:10px">
+    <div class="field"><label>扩散板单块面积 (m²)</label><input type="number" id="rta_diffArea" value="1.0" step="0.1" oninput="rtaRecalc()"></div>
+    <div class="field"><label>扩散板数量 <span class="bigval" id="rta_diffNLbl" style="font-size:14px">0</span> 块</label>
+      <input type="range" class="slider" id="rta_diffN" min="0" max="40" value="0" step="1" oninput="rtaRecalc()"></div>
+  </div>
+  <button class="btn small" onclick="rtaAuto()" style="margin-top:8px">⚙ 自动建议数量</button>
+</div>
+
+<div class="card">
+  <h3><span class="step">4</span>达标验算</h3>
+  <div class="results">
+    <div class="rcell spec"><div class="lbl">总体判定</div><div class="big" style="font-size:20px" id="rta_verdict">—</div></div>
+    <div class="rcell"><div class="lbl">处理后中频 RT (500–1k)</div><div class="big" style="font-size:22px"><span id="rta_midRT">—</span> <span class="u">s</span></div></div>
+    <div class="rcell"><div class="lbl">最难达标频带</div><div class="big" style="font-size:20px"><span id="rta_worst">—</span></div></div>
+    <div class="rcell"><div class="lbl">吸声体总面积</div><div class="big" style="font-size:22px"><span id="rta_totArea">—</span> <span class="u">m²</span></div></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);margin:4px 0 4px;cursor:pointer">
+    <input type="checkbox" id="rta_fitz" style="width:auto"> 非均匀吸声修正（Fitzroy）——计入"吸声贴在哪几面"的分布影响，比 Sabine 更能反映集中 vs 分散的差异
+  </label>
+  <p class="hint" id="rta_modelNote" style="margin-top:0"></p>
+  <div class="warnbox" id="rta_warn"></div>
+  <svg class="chart" id="rtaChart" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" style="margin-top:12px"></svg>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--red)"></i>当前 RT</span>
+    <span><i class="dot" style="background:var(--accent)"></i>处理后 RT</span>
+    <span><i style="background:#2c5d34"></i>目标区间</span>
+  </div>
+  <p class="desc" style="margin:14px 0 6px"><b>施工清单与安装位置</b></p>
+  <div class="tablewrap"><table class="grid" id="rtaPlanTable"></table></div>
+  <button class="btn small" onclick="rtaExport()" style="margin-top:10px">📄 导出现场指导报告</button>
+</div>
+
+<div class="card">
+  <h3><span class="step">5</span>三维房间与推荐布置</h3>
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px"><label style="margin:0;white-space:nowrap">被测件窗口所在墙</label>
+      <select id="rta_testWall" style="width:auto">
+        <option value="front">前墙</option><option value="back">后墙</option>
+        <option value="left">左墙</option><option value="right">右墙</option>
+      </select></div>
+    <div style="display:flex;align-items:center;gap:6px"><label style="margin:0;white-space:nowrap">洞口 宽×高 m</label>
+      <input type="number" id="rta_openW" value="1.5" step="0.1" style="width:64px" title="被测件洞口宽">
+      <span style="color:var(--muted)">×</span>
+      <input type="number" id="rta_openH" value="1.25" step="0.1" style="width:64px" title="被测件洞口高"></div>
+    <div class="seg" id="rta_bandSeg" style="margin:0"></div>
+  </div>
+  <canvas id="rtaCanvas" style="width:100%;height:430px;display:block;background:linear-gradient(180deg,#16222c,#0c141b);border-radius:10px;border:1px solid var(--line);cursor:grab"></canvas>
+  <p class="hint">拖动旋转。<b style="color:#2ee6a6">青色块</b>=宽频吸声板（<b>均布</b>于顶面 + 三面非试件墙上部），<b style="color:#f5a623">橙色柱</b>=角落低频陷阱，<b style="color:#b98cf0">紫块</b>=扩散板（分散于非试件墙面）。<b style="color:#5a92f0">蓝框墙 = 被测件窗口，保持硬面不做吸声</b>。房间染色表示<span id="rta_bandLbl">选定频带</span>处理后达标状态：<span style="color:#3fb950">绿=达标</span> / <span style="color:#ff6b66">红=超标</span> / <span style="color:#5a92f0">蓝=过吸</span>。</p>
+  <div class="results" id="rta_covRow" style="margin-top:10px"></div>
+  <div class="warnbox" id="rta_covWarn" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+  <h3><span class="step">6</span>逐墙施工立面图</h3>
+  <p class="desc">各表面展开图（按比例），给施工队用：<b style="color:#2ee6a6">青色</b>=宽频吸声板铺装区、<b style="color:#b98cf0">紫色</b>=扩散板、<b style="color:#f5a623">橙色</b>=角落低频陷阱、<b style="color:#5a92f0">蓝色洞口</b>=被测件窗口（留硬面）。标注为各面净尺寸与覆盖率。</p>
+  <svg class="chart" id="rtaElev" viewBox="0 0 760 460" preserveAspectRatio="xMidYMid meet"></svg>
+  <p class="hint">立面图与三维布置一致；面板排布为示意均布，现场可按板材模数就近取整、避开门/灯/桥架等服务带。</p>
 </div>
 </div>
 
@@ -1386,6 +1594,117 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
   const C=343;
   const $=id=>document.getElementById(id);
   let multiSrc=[{x:-1.5,y:0},{x:1.5,y:0}];
+  let dsAbsRef=null; // 当前帧标度/切面缓存（drawField 写入，mousemove 读数用）
+  let elemTrim={};   // 单元微调 {index:{g:dB,p:度}}（手动 MIMO）
+  let dsSelElem=null;                          // 当前选中单元 index
+  let orientYaw=-0.74, orientPitch=-0.40;      // 定位视图视角（可拖拽）
+  let orientCache=null;                        // 定位视图重绘缓存 {units,slice,span}
+  // 应用单元微调（幅度 dB→线性，相位 度→弧度）
+  function applyTrim(units){
+    for(const i in elemTrim){const t=elemTrim[i],u=units[i];
+      if(u){u.amp*=Math.pow(10,t.g/20);u.phase+=t.p*Math.PI/180;}}
+    return units;
+  }
+
+  /* ===== 自动 MIMO（对 UUT 面最小二乘均匀化）===== */
+  let mimoW=null, mimoOn=false, mimoSig='', mimoInfo=null;
+  function mimoApplicable(){ return $('ds_type').value==='dfat'; }
+  function applyMimo(units){
+    if(!mimoOn||!mimoW||!mimoApplicable()||mimoW.length!==units.length)return units;
+    units.forEach((u,i)=>{const wv=mimoW[i];if(wv){u.amp*=Math.pow(10,wv.g/20);u.phase+=wv.p*Math.PI/180;}});
+    return units;
+  }
+  // 完整单元 = 基础几何 → MIMO 权重 → 手动微调
+  function buildUnits(){ return applyTrim(applyMimo(buildUnitsBase())); }
+  function mimoSignature(){ return [$('ds_type').value,$('ds_dfatLayout')?$('ds_dfatLayout').value:'',
+    $('ds_N').value,$('ds_d').value,$('ds_rows')?$('ds_rows').value:'',$('ds_arcInc')?$('ds_arcInc').value:'',
+    $('ds_ringR').value,$('ds_tw').value,$('ds_th').value,$('ds_elemModel').value,$('ds_pistD').value].join('|'); }
+
+  // 实数线性方程组 Ax=b（n×n 行主序），部分主元高斯–约当消元；奇异返回 null
+  function solveLinearReal(A,b,n){
+    const M=[]; for(let i=0;i<n;i++)M[i]=Float64Array.from(A[i]);
+    const x=Float64Array.from(b);
+    for(let col=0;col<n;col++){
+      let piv=col,mx=Math.abs(M[col][col]);
+      for(let r=col+1;r<n;r++){const v=Math.abs(M[r][col]);if(v>mx){mx=v;piv=r;}}
+      if(mx<1e-14)return null;
+      if(piv!==col){const t=M[piv];M[piv]=M[col];M[col]=t;const tb=x[piv];x[piv]=x[col];x[col]=tb;}
+      for(let r=0;r<n;r++){ if(r===col)continue; const f=M[r][col]/M[col][col]; if(f===0)continue;
+        for(let c=col;c<n;c++)M[r][c]-=f*M[col][c]; x[r]-=f*x[col]; }
+    }
+    for(let i=0;i<n;i++)x[i]/=M[i][i];
+    return x;
+  }
+  // 求解 MIMO 复权重：目标=UUT 面均匀复声压(法向入射平面波)，Tikhonov 正则最小二乘
+  // 返回 {w:[{g,p}], driveMin, driveMax, M, freq} 或 null
+  function solveMimo(freq){
+    if(!mimoApplicable())return null;
+    const base=buildUnitsBase(); const N=base.length; if(N<1)return null;
+    const R=parseFloat($('ds_ringR').value);
+    const arrCy=base.reduce((s,u)=>s+u.y,0)/N, testCy=arrCy+R;
+    const tw=parseFloat($('ds_tw').value), th=parseFloat($('ds_th').value);
+    const k=2*Math.PI*freq/C;
+    const MX=5,MZ=5, pts=[];
+    for(let j=0;j<MZ;j++)for(let i=0;i<MX;i++)pts.push([(i/(MX-1)-0.5)*tw, testCy, (j/(MZ-1)-0.5)*th]);
+    const Mc=pts.length;
+    const Hr=[],Hi=[];
+    for(let m=0;m<Mc;m++){ Hr[m]=new Float64Array(N); Hi[m]=new Float64Array(N);
+      for(let n=0;n<N;n++){ const u=base[n];
+        const dx=pts[m][0]-u.x, dy=pts[m][1]-u.y, dz=pts[m][2]-u.z;
+        const r=Math.max(0.05,Math.sqrt(dx*dx+dy*dy+dz*dz));
+        const D=elemD(u,dx,dy,dz,r,k);
+        Hr[m][n]=D/r*Math.cos(k*r); Hi[m][n]=-D/r*Math.sin(k*r);
+      }}
+    const Ar=[],Ai=[]; for(let i=0;i<N;i++){Ar[i]=new Float64Array(N);Ai[i]=new Float64Array(N);}
+    const br=new Float64Array(N), bi=new Float64Array(N); let diagSum=0;
+    for(let i=0;i<N;i++){
+      for(let m=0;m<Mc;m++){ br[i]+=Hr[m][i]; bi[i]+=-Hi[m][i]; }   // b = Hᴴ·1
+      for(let j=0;j<N;j++){ let sr=0,si=0;
+        for(let m=0;m<Mc;m++){ const ar=Hr[m][i],aii=Hi[m][i],cr=Hr[m][j],ci=Hi[m][j];
+          sr+=ar*cr+aii*ci; si+=ar*ci-aii*cr; }                     // (Hᴴ H)_{ij}
+        Ar[i][j]=sr; Ai[i][j]=si; }
+      diagSum+=Ar[i][i];
+    }
+    const beta=Math.max(1e-9,0.01*diagSum/N);
+    for(let i=0;i<N;i++)Ar[i][i]+=beta;                            // Tikhonov 正则
+    const n2=2*N, MM=[]; for(let i=0;i<n2;i++)MM[i]=new Float64Array(n2);
+    const BB=new Float64Array(n2);
+    for(let i=0;i<N;i++){ for(let j=0;j<N;j++){
+      MM[i][j]=Ar[i][j]; MM[i][j+N]=-Ai[i][j]; MM[i+N][j]=Ai[i][j]; MM[i+N][j+N]=Ar[i][j]; }
+      BB[i]=br[i]; BB[i+N]=bi[i]; }
+    const x=solveLinearReal(MM,BB,n2); if(!x)return null;
+    let mx=1e-12; for(let i=0;i<N;i++){const a=Math.hypot(x[i],x[i+N]);if(a>mx)mx=a;}
+    const floor=Math.pow(10,-18/20), out=[]; let gmin=99,gmax=-99;
+    for(let i=0;i<N;i++){ let a=Math.hypot(x[i],x[i+N])/mx; const ph=Math.atan2(x[i+N],x[i])*180/Math.PI;
+      if(a<floor)a=floor; const g=20*Math.log10(a);
+      if(g<gmin)gmin=g; if(g>gmax)gmax=g; out.push({g:+g.toFixed(2),p:+ph.toFixed(1)}); }
+    // 守门：在独立评估网格(6×6)上核对，若不优于均匀驱动则回退（欠采样/栅瓣时 MIMO 无解）
+    function rngW(warr){ let vals=[];
+      for(let i=0;i<6;i++)for(let j=0;j<6;j++){ const px=(i/5-0.5)*tw, pz=(j/5-0.5)*th;
+        let re=0,im=0; for(let n=0;n<N;n++){ const u=base[n];
+          const dx=px-u.x,dy=testCy-u.y,dz=pz-u.z, r=Math.max(0.05,Math.sqrt(dx*dx+dy*dy+dz*dz));
+          const D=elemD(u,dx,dy,dz,r,k), amp=D*Math.pow(10,warr[n].g/20)/r, ph=-k*r+warr[n].p*Math.PI/180;
+          re+=amp*Math.cos(ph); im+=amp*Math.sin(ph); }
+        vals.push(20*Math.log10(Math.hypot(re,im)+1e-12)); }
+      return Math.max(...vals)-Math.min(...vals); }
+    const zeroW=base.map(()=>({g:0,p:0}));
+    const rUni=rngW(zeroW), rM=rngW(out);
+    if(rM>=rUni-0.1)return {w:zeroW, driveMin:0, driveMax:0, M:Mc, freq, improved:false, rUni, rM:rUni};
+    return {w:out, driveMin:gmin, driveMax:gmax, M:Mc, freq, improved:true, rUni, rM};
+  }
+  // 按给定权重生成一份 units（用于逐频带对照）
+  function unitsWithWeights(w){ const uu=buildUnitsBase();
+    uu.forEach((u,i)=>{const wv=w[i];if(wv){u.amp*=Math.pow(10,wv.g/20);u.phase+=wv.p*Math.PI/180;}}); return uu; }
+
+  window.dsMimoSolve=function(){
+    if(!mimoApplicable())return;
+    const res=solveMimo(parseFloat($('ds_f').value));
+    if(!res){ if($('ds_mimoInfo'))$('ds_mimoInfo').textContent='求解失败（矩阵奇异或单元过少）。'; return; }
+    mimoW=res.w; mimoOn=true; mimoSig=mimoSignature(); mimoInfo={freq:res.freq,driveMin:res.driveMin,driveMax:res.driveMax,M:res.M,improved:res.improved};
+    if($('ds_mimoOn'))$('ds_mimoOn').checked=true;
+    dsRender();
+  };
+  window.dsMimoToggle=function(){ mimoOn=$('ds_mimoOn').checked; dsRender(); };
 
   function kOf(){return 2*Math.PI*parseFloat($('ds_f').value)/C;}
 
@@ -1399,88 +1718,72 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     return lambda; // line / curve / focus 等静态宽边阵
   }
 
-  // 生成当前配置的单元数组 [{x,y,amp,phase}]
-  function buildUnits(){
+  // 生成当前配置的单元数组（真三维坐标）[{x,y,z,nx,ny,nz,amp,phase}]
+  // 坐标约定：x=横向，y=纵深(传播方向)，z=竖直。切面显示时按三维距离叠加全部单元。
+  function mk(x,y,z,nx,ny,nz,phase){return {x,y,z:z||0,nx:nx==null?0:nx,ny:ny==null?1:ny,nz:nz||0,amp:1,phase:phase||0};}
+  function buildUnitsBase(){
     const type=$('ds_type').value, k=kOf();
     const N=parseInt($('ds_N').value), d=parseFloat($('ds_d').value);
     let units;
-    if(type==='single')units=[{x:0,y:0,amp:1,phase:0}];
-    else if(type==='multi')return multiSrc.map(s=>({x:s.x,y:s.y,amp:1,phase:0})); // 用户手动摆放，不自动平移
+    if(type==='single')units=[mk(0,0,0)];
+    else if(type==='multi')return multiSrc.map(s=>mk(s.x,s.y,0)); // 用户手动摆放，不自动平移
     else if(type==='line'){
-      units=[];for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;units.push({x,y:0,amp:1,phase:0});}
+      units=[];for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;units.push(mk(x,0,0));}
     }
     else if(type==='phased'){
       const st=parseFloat($('ds_steer').value)*Math.PI/180;units=[];
-      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;units.push({x,y:0,amp:1,phase:-k*x*Math.sin(st)});}
+      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;units.push(mk(x,0,0,0,1,0,-k*x*Math.sin(st)));}
     }
     else if(type==='curve'){
       const includedAngle=parseFloat($('ds_curve').value);
       const shape=$('ds_curveShape')?$('ds_curveShape').value:'arc';
       units=[];
       if(shape==='j'){
-        // J形：上部直段 + 下部弧段。直段单元数按占比分配
+        // J形：上部直段 + 下部弧段。直段单元数按占比分配；单元法线=局部阵列切线的法向
         const straightPct=parseFloat($('ds_jStraight').value)/100;
         const nStraight=Math.max(1,Math.round(N*straightPct));
         const nArc=N-nStraight;
         let x=0,y=0,ang=0;
-        // 直段（ang=0，沿+x方向逐个排）
-        for(let i=0;i<nStraight;i++){units.push({x,y,amp:1,phase:0});x+=d;}
-        // 弧段：在直段末端继续，逐单元增加splay，弧段承担全部included angle
+        for(let i=0;i<nStraight;i++){units.push(mk(x,y,0,0,1,0));x+=d;}
         const splay=nArc>0?includedAngle*Math.PI/180/nArc:0;
-        for(let i=0;i<nArc;i++){ang+=splay;x+=d*Math.cos(ang);y-=d*Math.sin(ang);units.push({x,y,amp:1,phase:0});}
+        for(let i=0;i<nArc;i++){ang+=splay;x+=d*Math.cos(ang);y-=d*Math.sin(ang);
+          units.push(mk(x,y,0,Math.sin(ang),Math.cos(ang),0));}
       }else{
-        // 纯弧形：N单元恒定曲率。included angle = 首尾单元朝向夹角 = splay×(N-1)
-        // 用弧的极角参数化，保证关于y轴严格对称
-        const splay=N>1?includedAngle/(N-1):0; // 度
-        const radius=(splay!==0)?(d/(2*Math.sin(splay*Math.PI/360))):1e9; // 由弦长d与splay反推弧半径
+        // 纯弧形：恒定曲率，included angle = 首尾单元朝向夹角；单元法线沿设计朝向角展开
+        const splay=N>1?includedAngle/(N-1):0;
+        const radius=(splay!==0)?(d/(2*Math.sin(splay*Math.PI/360))):1e9;
         for(let i=0;i<N;i++){
-          const a=(-(includedAngle/2)+i*splay)*Math.PI/180; // 该单元法线方向相对中心
-          // 弧上单元位置：圆心在(0, radius)下方，单元沿圆周分布
-          units.push({x:radius*Math.sin(a), y:radius*(1-Math.cos(a)), amp:1, phase:0});
+          const a=(-(includedAngle/2)+i*splay)*Math.PI/180;
+          units.push(mk(radius*Math.sin(a), radius*(1-Math.cos(a)), 0, Math.sin(a), Math.cos(a), 0));
         }
       }
       const cx=units.reduce((s,p)=>s+p.x,0)/N;units.forEach(p=>p.x-=cx);
     }
     else if(type==='focus'){
       const fd=parseFloat($('ds_fd').value),fx=parseFloat($('ds_fx').value);units=[];
-      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;const rf=Math.sqrt((fx-x)**2+fd**2);units.push({x,y:0,amp:1,phase:k*rf});}
+      for(let i=0;i<N;i++){const x=(i-(N-1)/2)*d;const rf=Math.sqrt((fx-x)**2+fd**2);units.push(mk(x,0,0,0,1,0,k*rf));}
     }
     else if(type==='dfat'){
       const layout=$('ds_dfatLayout')?$('ds_dfatLayout').value:'flatPlane';
-      const R=parseFloat($('ds_ringR').value);
       const dd=d; units=[];
-      if(layout==='flatPlane'){
-        // 单排平面：扬声器在测试件前方一个平面(y=0)，等间距
-        for(let i=0;i<N;i++)units.push({x:(i-(N-1)/2)*dd,y:0,amp:1,phase:0});
-      }else if(layout==='arcPlane'){
-        // 弧形平面：扬声器沿凹弧排布(弧朝测试件)
-        const inc=parseFloat($('ds_arcInc').value);
-        const splay=N>1?inc/(N-1):0;
-        const radius=(splay!==0)?(dd/(2*Math.sin(splay*Math.PI/360))):1e9;
-        for(let i=0;i<N;i++){const a=(-(inc/2)+i*splay)*Math.PI/180;units.push({x:radius*Math.sin(a),y:radius*(1-Math.cos(a)),amp:1,phase:0});}
-        const cx=units.reduce((s,p)=>s+p.x,0)/N;units.forEach(p=>p.x-=cx);
-      }else if(layout==='flat3d'){
-        // 平面三维：行×列网格(在2D切面上各行投影到不同y表示纵深层)
-        const rows=parseInt($('ds_rows').value);
-        for(let r=0;r<rows;r++)for(let i=0;i<N;i++){
-          units.push({x:(i-(N-1)/2)*dd, y:r*dd*0.8, amp:1, phase:0});
-        }
-      }else if(layout==='arc3d'){
-        // 弧形三维：每行是一条弧，多行沿纵深叠加
-        const rows=parseInt($('ds_rows').value);
+      const rows=(layout==='flat3d'||layout==='arc3d')?parseInt($('ds_rows').value):1;
+      const zOf=r=>(r-(rows-1)/2)*dd; // 行沿竖直 z 轴堆叠（行距=单元间距），关于 z=0 对称
+      if(layout==='flatPlane'||layout==='flat3d'){
+        for(let r=0;r<rows;r++)for(let i=0;i<N;i++)
+          units.push(mk((i-(N-1)/2)*dd, 0, zOf(r)));
+      }else{ // arcPlane / arc3d：每行同一条凹弧（朝测试件），行沿 z 堆叠
         const inc=parseFloat($('ds_arcInc').value);
         const splay=N>1?inc/(N-1):0;
         const radius=(splay!==0)?(dd/(2*Math.sin(splay*Math.PI/360))):1e9;
         for(let r=0;r<rows;r++)for(let i=0;i<N;i++){
           const a=(-(inc/2)+i*splay)*Math.PI/180;
-          units.push({x:radius*Math.sin(a), y:radius*(1-Math.cos(a))+r*dd*0.8, amp:1, phase:0});
+          units.push(mk(radius*Math.sin(a), radius*(1-Math.cos(a)), zOf(r), Math.sin(a), Math.cos(a), 0));
         }
         const cx=units.reduce((s,p)=>s+p.x,0)/units.length;units.forEach(p=>p.x-=cx);
       }
     }
-    else units=[{x:0,y:0,amp:1,phase:0}];
-    // 归一化：阵列可能因弧度/聚焦朝任意方向延伸（如J型阵列大幅下垂到y<0），
-    // 统一平移使阵列包络框的上边缘贴合声场可视区域起始边（留一点边距），确保整个阵列形状都在画布内可见
+    else units=[mk(0,0,0)];
+    // 归一化：统一平移使阵列 y 向包络贴近可视区起始边（只动 y，不动 z）
     const margin = (type==='dfat') ? Math.max(0.15, d*0.6) : Math.max(0.1, d*0.6);
     const minY=Math.min(...units.map(u=>u.y));
     if(minY<margin){const shift=margin-minY;units.forEach(u=>u.y+=shift);}
@@ -1497,16 +1800,61 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     const xs=units.map(u=>u.x);return Math.max(...xs)-Math.min(...xs);
   }
 
-  // 某点复数声压幅值（与相位）
-  function fieldAt(units,k,px,py){
+  // ===== 一阶贝塞尔函数 J1（Abramowitz & Stegun 9.4.4 / 9.4.6 多项式近似，误差<1e-7）=====
+  function besselJ1(x){
+    const ax=Math.abs(x);
+    if(ax<3){
+      const t=x/3, t2=t*t;
+      return x*(0.5 + t2*(-0.56249985 + t2*(0.21093573 + t2*(-0.03954289 + t2*(0.00443319 + t2*(-0.00031761 + t2*0.00001109))))));
+    }
+    const t=3/ax;
+    const f1=0.79788456 + t*(0.00000156 + t*(0.01659667 + t*(0.00017105 + t*(-0.00249511 + t*(0.00113653 - t*0.00020033)))));
+    const th=ax - 2.35619449 + t*(0.12499612 + t*(0.00005650 + t*(-0.00637879 + t*(0.00074348 + t*(0.00079824 - t*0.00029166)))));
+    const v=f1*Math.cos(th)/Math.sqrt(ax);
+    return x<0?-v:v;
+  }
+  // 单元指向性缓存（每帧由 dsRenderCore 刷新，避免像素循环里读 DOM）
+  const EM={model:'mono', a:0.125};
+  function refreshElemModel(){
+    EM.model=$('ds_elemModel')?$('ds_elemModel').value:'mono';
+    EM.a=($('ds_pistD')?parseFloat($('ds_pistD').value):0.25)/2;
+  }
+  // 单元指向性 D(θ)：θ 为场点方向与单元法线夹角
+  function elemD(u,dx,dy,dz,r,k){
+    if(EM.model==='mono')return 1;
+    const ct=(dx*u.nx+dy*u.ny+dz*u.nz)/r; // cosθ
+    if(EM.model==='card')return Math.max(0.03, 0.5+0.5*ct);
+    // 障板活塞：D=|2J1(v)/v|, v=ka·sinθ；背向半空间按 -26dB 底限近似
+    const st=Math.sqrt(Math.max(0,1-ct*ct));
+    const v=k*EM.a*st;
+    let D=(v<1e-6)?1:Math.abs(2*besselJ1(v)/v);
+    if(ct<0)D=Math.min(D,0.05);
+    return Math.max(D,0.01);
+  }
+  // 某三维点复数声压（pz 缺省 0 = 水平切面高度）
+  function fieldAt(units,k,px,py,pz){
+    pz=pz||0;
     let re=0,im=0;
     for(const u of units){
-      const r=Math.max(0.03,Math.sqrt((px-u.x)**2+(py-u.y)**2));
-      const ph=-k*r+u.phase, a=u.amp/r;
+      const dx=px-u.x, dy=py-u.y, dz=pz-u.z;
+      const r=Math.max(0.03,Math.sqrt(dx*dx+dy*dy+dz*dz));
+      const D=elemD(u,dx,dy,dz,r,k);
+      const ph=-k*r+u.phase, a=D*u.amp/r;
       re+=a*Math.cos(ph); im+=a*Math.sin(ph);
     }
     return {amp:Math.sqrt(re*re+im*im),re,im};
   }
+  // 切面映射：h=水平XY(俯视, 高度zs) / v=垂直YZ(侧视, 横向位置zs)
+  function sliceMode(){
+    const m=$('ds_slice')?$('ds_slice').value:'h';
+    const zs=$('ds_sliceZ')?parseFloat($('ds_sliceZ').value):0;
+    return {m,zs};
+  }
+  function fieldAtSlice(units,k,u,v,slice){
+    return slice.m==='h' ? fieldAt(units,k,u,v,slice.zs) : fieldAt(units,k,slice.zs,v,u);
+  }
+  // 单元/点在切面画布坐标 (u=横轴, v=纵轴/纵深)
+  function elemUV(el,slice){ return slice.m==='h' ? [el.x,el.y] : [el.z,el.y]; }
 
   /* ===== 类型切换显示对应参数 ===== */
   window.dsTypeChange=function(){
@@ -1517,6 +1865,9 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     $('ds_focusBox').style.display=(t==='focus')?'block':'none';
     $('ds_ringBox').style.display=(t==='dfat')?'block':'none';
     $('ds_multiBox').style.display=(t==='multi')?'block':'none';
+    if($('ds_mimoBox'))$('ds_mimoBox').style.display=(t==='dfat')?'block':'none';
+    if($('ds_trimBox'))$('ds_trimBox').style.display=['line','curve','focus','phased','dfat'].includes(t)?'block':'none';
+    dsSelElem=null; if(typeof updateTrimUI==='function')updateTrimUI();
     $('ds_dfatCard').style.display=(t==='dfat')?'block':'none';
     if(t==='dfat'){dsDfatLayoutUpd();dsRingUpd();}
     dsRender();
@@ -1542,6 +1893,27 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     dsRenderRaf=requestAnimationFrame(()=>{dsRenderRaf=null;dsRenderCore();});
   };
   function dsRenderCore(){
+    // 单元模型缓存 + 新控件联动
+    refreshElemModel();
+    // MIMO：开启时随频率/几何变化自动重解（真实控制器逐频自适应），单元过多则跳过自动重解
+    if(mimoOn&&mimoApplicable()){
+      const sig=mimoSignature(), f=parseFloat($('ds_f').value);
+      const stale = sig!==mimoSig || !mimoInfo || Math.abs((mimoInfo.freq||-1)-f)>0.5;
+      const nEl=buildUnitsBase().length;
+      if(stale && nEl<=64){ const res=solveMimo(f);
+        if(res){ mimoW=res.w; mimoSig=sig; mimoInfo={freq:f,driveMin:res.driveMin,driveMax:res.driveMax,M:res.M,improved:res.improved}; } }
+    }
+    if($('ds_pistonBox'))$('ds_pistonBox').style.display=(EM.model==='piston')?'block':'none';
+    if($('ds_pistDLbl'))$('ds_pistDLbl').textContent=fmt(EM.a*2,2);
+    const lvlMode=$('ds_lvlMode')?$('ds_lvlMode').value:'rel';
+    if($('ds_splBox'))$('ds_splBox').style.display=(lvlMode==='abs')?'block':'none';
+    if($('ds_spl1mLbl'))$('ds_spl1mLbl').textContent=$('ds_spl1m').value;
+    const slice=sliceMode();
+    if($('ds_sliceZLbl'))$('ds_sliceZLbl').textContent=fmt(slice.zs,1);
+    if($('ds_sliceZBox')){
+      const lab=$('ds_sliceZBox').querySelector('label');
+      if(lab)lab.firstChild.textContent = slice.m==='h' ? '切面高度 z ' : '切面横向位置 x ';
+    }
     // 标签更新
     const f=parseFloat($('ds_f').value);
     $('ds_fLbl').textContent=f;$('ds_wl').textContent=fmt(C/f,2);
@@ -1602,22 +1974,22 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     if($('ds_type').value==='multi')buildSrcList();
   }
 
-  /* ===== DFAT 声场均匀性评估 ===== */
+  /* ===== DFAT 声场均匀性评估：在 UUT 受声面（宽tw×高th 的 x-z 竖直面，位于 y=testCy）上三维采样 ===== */
   const DFAT_BANDS=[125,250,500,1000,2000,4000];
   function dfatSampleRange(units,freq,testCx,testCy,tw,th){
     const k=2*Math.PI*freq/C;
-    const NS=6; // 每方向采样数
+    const NS=6; // 每方向采样数（6×6 测点，NASA-HDBK-7010 推荐平面传声器阵列思路）
     let vals=[];
     for(let i=0;i<NS;i++)for(let j=0;j<NS;j++){
-      const x=testCx+(i/(NS-1)-0.5)*tw, y=testCy+(j/(NS-1)-0.5)*th;
-      vals.push(20*Math.log10(fieldAt(units,k,x,y).amp));
+      const x=testCx+(i/(NS-1)-0.5)*tw;         // 横向
+      const z=(j/(NS-1)-0.5)*th;                 // 竖直（UUT 面为 x-z 平面）
+      vals.push(20*Math.log10(fieldAt(units,k,x,testCy,z).amp));
     }
     const max=Math.max(...vals), min=Math.min(...vals), mean=vals.reduce((s,v)=>s+v,0)/vals.length;
     return {range:max-min, mean, max, min};
   }
   function dfatEvaluate(units){
-    // DFAT几何：扬声器阵列朝 +y 方向辐射，测试件(UUT)位于阵列前方距离 R 处。
-    // 以阵列声学中心(各单元y均值)为基准，测试件中心 = 阵列中心 + R，使距离定义对各布局一致直观。
+    // DFAT几何：阵列朝 +y 辐射，UUT 受声面(宽×高)立于前方距离 R 处（x-z 竖直平面）。
     const R=parseFloat($('ds_ringR').value);
     const arrCenterY=units.reduce((s,u)=>s+u.y,0)/units.length;
     const testCx=0, testCy=arrCenterY+R;
@@ -1626,22 +1998,103 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     const cur=dfatSampleRange(units,f,testCx,testCy,tw,th);
     const TOL=6; // ±3dB容差 = 极差6dB
     $('ds_dfatRange').textContent=fmt(cur.range,1);
-    $('ds_dfatMean').textContent=fmt(cur.mean,1);
+    const lvlMode=$('ds_lvlMode')?$('ds_lvlMode').value:'rel';
+    if(lvlMode==='abs'){
+      const spl1m=parseFloat($('ds_spl1m').value);
+      $('ds_dfatMean').textContent=fmt(spl1m+cur.mean,1);
+      const meanCell=$('ds_dfatMean').parentElement.parentElement.querySelector('.lbl');
+      if(meanCell)meanCell.textContent='测试面均值 (绝对SPL)';
+    }else{
+      $('ds_dfatMean').textContent=fmt(cur.mean,1);
+      const meanCell=$('ds_dfatMean').parentElement.parentElement.querySelector('.lbl');
+      if(meanCell)meanCell.textContent='测试区域均值';
+    }
     const passEl=$('ds_dfatPass');
     if(cur.range<=TOL){passEl.textContent='✓ 满足 ±3dB';passEl.style.color='var(--accent)';}
     else{passEl.textContent='✗ 超出 ±3dB（差'+fmt(cur.range-TOL,1)+'dB)';passEl.style.color='var(--red)';}
-    // 分倍频带
+    // MIMO 前后对比（均匀驱动基线 vs 当前 units）
+    const uniformUnits=buildUnitsBase();
+    const curUniform=dfatSampleRange(uniformUnits,f,testCx,testCy,tw,th);
+    if($('ds_mimoInfo')){
+      if(mimoOn&&mimoInfo){
+        if(mimoInfo.improved===false){
+          $('ds_mimoInfo').innerHTML=`@${fmt(mimoInfo.freq,0)}Hz <b style="color:var(--warm)">单元过稀/栅瓣，MIMO 无法改善</b>，已回退均匀驱动（极差 ${fmt(cur.range,1)} dB）。此频率需更密的阵列（d≲λ/2）。`;
+        }else{
+          $('ds_mimoInfo').innerHTML=`控制点 ${mimoInfo.M} · 驱动 ${fmt(mimoInfo.driveMin,1)}~${fmt(mimoInfo.driveMax,1)} dB · @${fmt(mimoInfo.freq,0)}Hz 面内极差 <b>优化前 ${fmt(curUniform.range,1)} → 优化后 ${fmt(cur.range,1)} dB</b>`;
+        }
+      }else{ $('ds_mimoInfo').textContent = mimoW?'已求解，勾选"应用"查看效果（会随频率自动重解）。':'未求解。点上方按钮生成权重（会随频率自动重解）。'; }
+    }
+    // 分倍频带（MIMO 开启时逐频带单独求解，展示"完整 MIMO 控制"可达的全频带均匀性）
+    const showMimo = mimoOn && mimoApplicable();
+    const thead=$('dfatBandTable')&&$('dfatBandTable').querySelector('thead');
+    if(thead)thead.innerHTML = showMimo
+      ? '<tr><th>频带</th><th>均匀驱动极差</th><th>MIMO后极差</th><th>MIMO判定</th></tr>'
+      : '<tr><th>频带</th><th>极差 (dB)</th><th>±3dB 容差判定</th></tr>';
     let rows='';
     DFAT_BANDS.forEach(b=>{
-      const r=dfatSampleRange(units,b,testCx,testCy,tw,th);
-      const pass=r.range<=TOL;
-      rows+=`<tr><td>${b>=1000?(b/1000)+'k':b} Hz</td><td class="val">${fmt(r.range,1)}</td><td style="color:${pass?'var(--accent)':'var(--red)'};font-weight:600">${pass?'✓ 满足':'✗ 超出'}</td></tr>`;
+      const rUni=dfatSampleRange(uniformUnits,b,testCx,testCy,tw,th);
+      const bl=(b>=1000?(b/1000)+'k':b)+' Hz';
+      if(showMimo){
+        const res=solveMimo(b); let rM=rUni;
+        if(res)rM=dfatSampleRange(unitsWithWeights(res.w),b,testCx,testCy,tw,th);
+        const passM=rM.range<=TOL;
+        rows+=`<tr><td>${bl}</td><td class="val" style="color:var(--muted)">${fmt(rUni.range,1)}</td><td class="val">${fmt(rM.range,1)}</td><td style="color:${passM?'var(--accent)':'var(--red)'};font-weight:600">${passM?'✓ 满足':'✗ 超出'}</td></tr>`;
+      }else{
+        const pass=rUni.range<=TOL;
+        rows+=`<tr><td>${bl}</td><td class="val">${fmt(rUni.range,1)}</td><td style="color:${pass?'var(--accent)':'var(--red)'};font-weight:600">${pass?'✓ 满足':'✗ 超出'}</td></tr>`;
+      }
     });
     $('dfatBandTbody').innerHTML=rows;
     // 在画布上标出测试件位置(供drawField读取)
     R3D_dfatTest={cx:testCx,cy:testCy,tw,th,R};
+    // UUT 受声面热图
+    drawUUTMap(units, 2*Math.PI*f/C, testCx, testCy, tw, th);
   }
   let R3D_dfatTest=null;
+
+  /* ===== UUT 受声面声压分布热图（正对阵列视角，x-z 面）===== */
+  function drawUUTMap(units,k,testCx,testCy,tw,th){
+    const cv=$('dsUutMap'); if(!cv)return;
+    const dpr=Math.min(devicePixelRatio||1,2);
+    const w=cv.clientWidth||420,h=cv.clientHeight||270;
+    if(cv.width!==Math.floor(w*dpr)){cv.width=Math.floor(w*dpr);cv.height=Math.floor(h*dpr);}
+    const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+    const NX=64, NZ=Math.max(24,Math.round(NX*h/w));
+    const db=new Float32Array(NX*NZ);let mx=-1e9,mn=1e9,sum=0;
+    for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){
+      const x=testCx+(i/(NX-1)-0.5)*tw;
+      const z=(0.5-j/(NZ-1))*th; // j=0 → UUT 顶部
+      const v=20*Math.log10(fieldAt(units,k,x,testCy,z).amp+1e-12);
+      db[j*NX+i]=v; if(v>mx)mx=v; if(v<mn)mn=v; sum+=v;
+    }
+    const mean=sum/(NX*NZ);
+    // 色标以均值为中心 ±6dB（直观对应 ±3dB 容差带）
+    const img=ctx.createImageData(NX,NZ); const dd=img.data;
+    for(let q=0;q<NX*NZ;q++){
+      const t=(db[q]-(mean-6))/12; const col=heatColor(Math.max(0,Math.min(1,t)));
+      const o=q*4; dd[o]=col[0];dd[o+1]=col[1];dd[o+2]=col[2];dd[o+3]=255;
+    }
+    // 均值±3dB 容差边界描白
+    for(let j=0;j<NZ-1;j++)for(let i=0;i<NX-1;i++){
+      const q=j*NX+i; const a=Math.abs(db[q]-mean)<=3;
+      const b=Math.abs(db[q+1]-mean)<=3, c2=Math.abs(db[q+NX]-mean)<=3;
+      if(a!==b||a!==c2){const o=q*4;dd[o]=255;dd[o+1]=255;dd[o+2]=255;}
+    }
+    const off=document.createElement('canvas');off.width=NX;off.height=NZ;
+    off.getContext('2d').putImageData(img,0,0);
+    ctx.imageSmoothingEnabled=true; ctx.clearRect(0,0,w,h);
+    ctx.drawImage(off,0,0,NX,NZ,0,0,w,h);
+    ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;ctx.strokeRect(0.5,0.5,w-1,h-1);
+    ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='10px sans-serif';
+    ctx.fillText('宽 x = '+fmt(tw,1)+' m',6,h-6);
+    ctx.save();ctx.translate(11,h/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';
+    ctx.fillText('高 z = '+fmt(th,1)+' m',0,0);ctx.restore();
+    const lvlMode=$('ds_lvlMode')?$('ds_lvlMode').value:'rel';
+    const spl1m=$('ds_spl1m')?parseFloat($('ds_spl1m').value):100;
+    const mtxt= lvlMode==='abs' ? ('面均值 <b>'+fmt(spl1m+mean,1)+' dB SPL</b>') : ('面均值(相对) <b>'+fmt(mean,1)+' dB</b>');
+    if($('dsUutHint'))$('dsUutHint').innerHTML=
+      `${mtxt} · 面内极差 <b>${fmt(mx-mn,1)} dB</b> · 白线=均值±3dB 容差边界（线内为达标区）。${NX}×${NZ} 三维采样。`;
+  }
 
   function drawField(units,k){
     const cv=$('dsCanvas');const dpr=Math.min(devicePixelRatio||1,2);
@@ -1650,40 +2103,45 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
     const span=parseFloat($('ds_span').value), dyn=parseFloat($('ds_dyn').value);
     const showPhase=$('ds_phase').checked;
-    // 坐标：声源在画布上方中央(x居中, y从顶向下=传播方向)
-    // 世界范围 x:[-span/2,span/2], y:[0,span]
+    const slice=sliceMode();
+    // 画布坐标：横轴 u（h切面=x，v切面=z），纵轴 v=y 纵深（顶→下=传播方向）
+    // 世界范围 u:[-span/2,span/2], v:[0,span]
     const W=w,H=h;
     const res=2; // 计算步长：每 res×res 像素算一次场，块填充（约 4× 提速）
     const type0=$('ds_type').value;
-    // 先求最大幅值(用于归一)——较密的稀疏采样，聚焦阵额外把焦点纳入避免漏掉尖峰
+    // 峰值归一（稀疏采样 + 聚焦点强制纳入，避免漏尖峰）
     let pmax=0;
-    for(let py=0.2;py<span;py+=span/60)for(let px=-span/2;px<span/2;px+=span/60){
-      const a=fieldAt(units,k,px,py).amp;if(a>pmax)pmax=a;
+    for(let pv=0.2;pv<span;pv+=span/60)for(let pu=-span/2;pu<span/2;pu+=span/60){
+      const a=fieldAtSlice(units,k,pu,pv,slice).amp;if(a>pmax)pmax=a;
     }
     if(type0==='focus'){
-      const a=fieldAt(units,k,parseFloat($('ds_fx').value),parseFloat($('ds_fd').value)).amp;
+      const a=fieldAt(units,k,parseFloat($('ds_fx').value),parseFloat($('ds_fd').value),0).amp;
       if(a>pmax)pmax=a;
     }
     if(pmax<=0)pmax=1;
+    // 标度：相对峰值 或 绝对 SPL（单元SPL@1m + 20log|Σ(1/r)e^{jφ}|，1/r 定律）
+    const lvlMode=$('ds_lvlMode')?$('ds_lvlMode').value:'rel';
+    const spl1m=$('ds_spl1m')?parseFloat($('ds_spl1m').value):100;
+    const topDb = lvlMode==='abs' ? spl1m+20*Math.log10(pmax) : 0;
+    if($('ds_cbHi'))$('ds_cbHi').textContent = lvlMode==='abs' ? fmt(topDb,0)+' dB SPL' : '0 dB(峰)';
+    if($('ds_cbLo'))$('ds_cbLo').textContent = lvlMode==='abs' ? fmt(topDb-dyn,0) : '−'+dyn;
     const IW=Math.ceil(W),IH=Math.ceil(H);
     const img=ctx.createImageData(IW,IH);
     const data=img.data;
     for(let sy=0;sy<H;sy+=res){
-      const py=(sy/H)*span; // y world 0..span
+      const pv=(sy/H)*span;
       for(let sx=0;sx<W;sx+=res){
-        const px=(sx/W-0.5)*span;
-        const fp=fieldAt(units,k,px,py);
+        const pu=(sx/W-0.5)*span;
+        const fp=fieldAtSlice(units,k,pu,pv,slice);
         let val;
         if(showPhase){
-          // 显示瞬时实部（干涉条纹）
           const norm=fp.re/pmax;
-          val=(norm+1)/2; // 0..1
+          val=(norm+1)/2;
         }else{
-          const db=20*Math.log10(fp.amp/pmax+1e-9);
+          const db=20*Math.log10(fp.amp/pmax+1e-9); // 相对峰值；abs 模式只改色标标签，映射相同
           val=Math.max(0,Math.min(1,(db+dyn)/dyn));
         }
         const [r,g,b]=showPhase?phaseColor(val):heatColor(val);
-        // 填充 res×res 块
         for(let by=0;by<res&&sy+by<IH;by++){
           const rowOff=((sy+by)*IW+sx)*4;
           for(let bx=0;bx<res&&sx+bx<IW;bx++){
@@ -1694,27 +2152,31 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
       }
     }
     ctx.putImageData(img,0,0);
-    // 叠加阵列形状
-    const wx=px=>(px/span+0.5)*W, wy=py=>(py/span)*H;
+    dsAbsRef={mode:lvlMode, spl1m, pmax, slice}; // 供 mousemove 读数使用
+    // 叠加阵列形状（按当前切面投影：h→(x,y)，v→(z,y)）
+    const wx=pu=>(pu/span+0.5)*W, wy=pv=>(pv/span)*H;
     const type=$('ds_type').value;
     const isArray = units.length>1 && type!=='multi';
+    // 投影 + 去重（h 切面下竖直堆叠的行会重合，只画一次并标注行数）
+    const seen=new Map();
+    units.forEach((u,i)=>{ const [pu,pv]=elemUV(u,slice);
+      const key=Math.round(pu*100)+'_'+Math.round(pv*100);
+      if(!seen.has(key))seen.set(key,{pu,pv,i,count:1}); else seen.get(key).count++; });
+    const marks=[...seen.values()];
 
     if(isArray){
-      // 阵列总长（孔径），用于决定衬底带宽度与单元标记尺寸——与背景热力图解耦，保证可见性
-      let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-      units.forEach(u=>{if(u.x<minX)minX=u.x;if(u.x>maxX)maxX=u.x;if(u.y<minY)minY=u.y;if(u.y>maxY)maxY=u.y;});
-      const apertureWorld=Math.max(0.3,Math.hypot(maxX-minX,maxY-minY));
-      // 衬底带：半透明深色描边+白色填充的"轨道"，先打个底，任何颜色背景上都能看清阵列走向
-      const trackPts=units.map(u=>[wx(u.x),wy(u.y)]);
+      let minU=Infinity,maxU=-Infinity,minV=Infinity,maxV=-Infinity;
+      marks.forEach(m=>{if(m.pu<minU)minU=m.pu;if(m.pu>maxU)maxU=m.pu;if(m.pv<minV)minV=m.pv;if(m.pv>maxV)maxV=m.pv;});
+      // 衬底带：沿投影单元画"轨道"
       ctx.save();
-      ctx.beginPath();trackPts.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));
+      ctx.beginPath();marks.forEach((m,i)=>i===0?ctx.moveTo(wx(m.pu),wy(m.pv)):ctx.lineTo(wx(m.pu),wy(m.pv)));
       ctx.lineCap='round';ctx.lineJoin='round';
-      ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=10;ctx.stroke(); // 深色外描边(衬底)
-      ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=6;ctx.stroke(); // 白色主体
+      ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=10;ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=6;ctx.stroke();
       ctx.restore();
 
-      // 朝向箭头：从阵列中心指向主瓣方向
-      if(type==='phased'||type==='line'||type==='curve'){
+      // 朝向箭头（仅水平切面有意义：偏转在 xy 平面内）
+      if(slice.m==='h'&&(type==='phased'||type==='line'||type==='curve')){
         const cx=units.reduce((s,u)=>s+u.x,0)/units.length, cy=units.reduce((s,u)=>s+u.y,0)/units.length;
         const steer=type==='phased'?parseFloat($('ds_steer').value):0;
         const ar=steer*Math.PI/180;
@@ -1731,65 +2193,72 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
         ctx.restore();
       }
 
-      // 单元标记：固定较大的可见尺寸（不随单元数/间距缩小到不可见），密集时允许略微重叠
-      const markR=5.5; // 像素半径，固定值保证可见
-      units.forEach((u,i)=>{
-        const x=wx(u.x),y=wy(u.y);
+      // 单元标记（去重后），重合处标 ×n
+      const markR=5.5;
+      marks.forEach(m=>{
+        const x=wx(m.pu),y=wy(m.pv);
         ctx.beginPath();ctx.arc(x,y,markR,0,2*Math.PI);
         ctx.fillStyle='#0fb58e';ctx.fill();
         ctx.strokeStyle='#0a2622';ctx.lineWidth=1.5;ctx.stroke();
       });
-      // 编号（单元数不太多时显示）
-      if(units.length<=20){
+      // 已微调单元：琥珀色外圈；选中单元：黄色粗圈
+      for(const ti in elemTrim){ const u=units[ti]; if(!u)continue;
+        const [pu,pv]=elemUV(u,slice);
+        ctx.beginPath();ctx.arc(wx(pu),wy(pv),markR+2.5,0,2*Math.PI);
+        ctx.strokeStyle='#f5a623';ctx.lineWidth=2;ctx.stroke(); }
+      if(dsSelElem!=null&&units[dsSelElem]){
+        const [pu,pv]=elemUV(units[dsSelElem],slice);
+        ctx.beginPath();ctx.arc(wx(pu),wy(pv),markR+4.5,0,2*Math.PI);
+        ctx.strokeStyle='#ffd24a';ctx.lineWidth=2.5;ctx.stroke();
+        ctx.beginPath();ctx.arc(wx(pu),wy(pv),markR+4.5,0,2*Math.PI);
+        ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1;ctx.stroke();
+      }
+      if(marks.length<=20){
         ctx.font='9px sans-serif';ctx.textAlign='center';
-        units.forEach((u,i)=>{
-          const x=wx(u.x),y=wy(u.y);
-          ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(String(i+1),x,y-7.5);
-          ctx.fillStyle='#fff';ctx.fillText(String(i+1),x,y-8);
+        marks.forEach(m=>{
+          const x=wx(m.pu),y=wy(m.pv);
+          const t=m.count>1?('×'+m.count):String(m.i+1);
+          ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(t,x,y-7.5);
+          ctx.fillStyle='#fff';ctx.fillText(t,x,y-8);
         });
         ctx.textAlign='left';
       }
-      // 阵列说明角标：类型+尺寸+单元数
+      // 阵列说明角标：类型+三维尺寸+单元数+切面
       const layoutNm=$('ds_dfatLayout')?({flatPlane:'多点平面',arcPlane:'弧形平面',flat3d:'平面三维',arc3d:'弧形三维'})[$('ds_dfatLayout').value]:'';
       const lbl=({line:'直线阵列',curve:'弧形阵列',focus:'聚焦阵列',phased:'相控阵',dfat:'DFAT '+layoutNm})[type]||'';
-      // 弦长(首尾直线距离)=投影孔径；弧长=沿阵列各段长度之和
-      const chord=apertureWorld;
-      let arcLen=0;for(let i=1;i<units.length;i++)arcLen+=Math.hypot(units[i].x-units[i-1].x,units[i].y-units[i-1].y);
+      let mnx=1/0,mxx=-1/0,mnz=1/0,mxz=-1/0,arcLen=0;
+      units.forEach(u=>{if(u.x<mnx)mnx=u.x;if(u.x>mxx)mxx=u.x;if(u.z<mnz)mnz=u.z;if(u.z>mxz)mxz=u.z;});
+      for(let i=1;i<units.length;i++)arcLen+=Math.hypot(units[i].x-units[i-1].x,units[i].y-units[i-1].y,units[i].z-units[i-1].z);
       const layout3d = type==='dfat' && /3d/.test($('ds_dfatLayout')?$('ds_dfatLayout').value:'');
       let sizeTxt;
-      if(type==='curve'){
-        // 单条弧：弧长(声学展开长度) + 投影孔径(首尾跨度,决定水平指向性)
-        sizeTxt=`弧长${arcLen.toFixed(2)}m · 投影孔径${chord.toFixed(2)}m`;
-      }else if(layout3d){
-        // 三维阵列：用包络框宽×高表示，不用单一孔径
-        const w=maxX-minX, hgt=maxY-minY;
-        sizeTxt=`阵面${w.toFixed(2)}×${hgt.toFixed(2)}m`;
-      }else{
-        // 直线/相控阵/单排平面：首尾长度即孔径
-        sizeTxt=`孔径${chord.toFixed(2)}m`;
-      }
-      const txt=`${lbl} · ${units.length}单元 · ${sizeTxt}`;
+      if(type==='curve')sizeTxt=`弧长${arcLen.toFixed(2)}m · 投影孔径${(maxU-minU).toFixed(2)}m`;
+      else if(layout3d)sizeTxt=`阵面 宽${(mxx-mnx).toFixed(2)}×高${(mxz-mnz).toFixed(2)}m`;
+      else sizeTxt=`孔径${Math.max(maxU-minU,maxV-minV).toFixed(2)}m`;
+      const sliceTxt = slice.m==='h' ? `水平切面 z=${fmt(slice.zs,1)}m` : `垂直切面 x=${fmt(slice.zs,1)}m`;
+      const txt=`${lbl} · ${units.length}单元 · ${sizeTxt} · ${sliceTxt}`;
       ctx.font='11px sans-serif';
       ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3;ctx.lineJoin='round';
       ctx.strokeText(txt,8,H-10);
       ctx.fillStyle='#fff';ctx.fillText(txt,8,H-10);
     }else{
-      units.forEach(u=>{
-        const x=wx(u.x),y=wy(u.y);
+      marks.forEach(m=>{
+        const x=wx(m.pu),y=wy(m.pv);
         ctx.beginPath();ctx.arc(x,y,5,0,2*Math.PI);
         ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#0a7d63';ctx.lineWidth=1.5;ctx.stroke();
       });
     }
-    // 焦点标记
+    // 焦点标记（焦点在 z=0 平面：h切面→(fx,fd)，v切面→(0,fd)）
     if(type==='focus'){
-      const fx=parseFloat($('ds_fx').value),fd=parseFloat($('ds_fd').value);
-      ctx.beginPath();ctx.arc(wx(fx),wy(fd),6,0,2*Math.PI);ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.stroke();
-      ctx.beginPath();ctx.moveTo(wx(fx)-9,wy(fd));ctx.lineTo(wx(fx)+9,wy(fd));ctx.moveTo(wx(fx),wy(fd)-9);ctx.lineTo(wx(fx),wy(fd)+9);ctx.stroke();
+      const fx0=parseFloat($('ds_fx').value),fd=parseFloat($('ds_fd').value);
+      const fu=slice.m==='h'?fx0:0;
+      ctx.beginPath();ctx.arc(wx(fu),wy(fd),6,0,2*Math.PI);ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(wx(fu)-9,wy(fd));ctx.lineTo(wx(fu)+9,wy(fd));ctx.moveTo(wx(fu),wy(fd)-9);ctx.lineTo(wx(fu),wy(fd)+9);ctx.stroke();
     }
-    // DFAT 测试件(UUT)矩形框
+    // DFAT 测试件(UUT)矩形框：h切面显示宽 tw，v切面显示高 th；纵深方向按UUT厚度示意
     if(type==='dfat'&&R3D_dfatTest){
       const t=R3D_dfatTest;
-      const x1=wx(t.cx-t.tw/2),x2=wx(t.cx+t.tw/2),y1=wy(t.cy-t.th/2),y2=wy(t.cy+t.th/2);
+      const half=(slice.m==='h'?t.tw:t.th)/2;
+      const x1=wx(t.cx-half),x2=wx(t.cx+half),y1=wy(t.cy-t.th/2),y2=wy(t.cy+t.th/2);
       ctx.save();
       // 距离标注线：从阵列中心到测试件中心
       const arrCy=units.reduce((s,u)=>s+u.y,0)/units.length;
@@ -1811,11 +2280,76 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
       ctx.fillStyle='#ffd24a';ctx.fillText('测试件 UUT '+fmt(t.tw,1)+'×'+fmt(t.th,1)+'m',(x1+x2)/2,y1-5);
       ctx.textAlign='left';ctx.restore();
     }
-    // 比例尺
+    // 比例尺（轴向随切面）
     ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='10px sans-serif';
-    ctx.fillText('0',wx(0)+2,12);ctx.fillText('宽 '+span+'m',4,H-6);
+    ctx.fillText('0',wx(0)+2,12);
+    ctx.fillText((slice.m==='h'?'横轴 x · 宽 ':'横轴 z(竖直) · 宽 ')+span+'m',4,H-6);
     // 多声源拖动提示
     if($('ds_type').value==='multi'){ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillText('点击添加声源',W-90,H-6);}
+    // 右上角三维定位视图：标出切面平面在空间中的位置
+    drawOrient(units,slice,span);
+  }
+
+  /* ===== 三维定位小视图：切面平面 + 阵列 + UUT 的空间关系 ===== */
+  function drawOrient(units,slice,span){
+    const cv=$('dsOrient'); if(!cv)return;
+    orientCache={units,slice,span}; // 供拖拽旋转时重绘
+    const ctx=cv.getContext('2d'); const W=cv.width,H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    const hs=span/2;
+    let zr=1; units.forEach(u=>{if(Math.abs(u.z)>zr)zr=Math.abs(u.z);});
+    if(R3D_dfatTest)zr=Math.max(zr,R3D_dfatTest.th/2);
+    zr=Math.max(zr*1.3,Math.abs(slice.zs)*1.3,span*0.15);
+    const yaw=orientYaw,pitch=orientPitch;
+    const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+    const sc=Math.min(W,H)/(span*2.0);
+    function P(x,y,z){
+      const X1=x*cy-(y-hs)*sy, Y1=x*sy+(y-hs)*cy;
+      const Y2=Y1*cp-z*sp, Z2=Y1*sp+z*cp;
+      return [W/2+X1*sc, H/2+12-Z2*sc, Y2];
+    }
+    function quad(pts,fill,stroke,lw){
+      ctx.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1],p[2]);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);});
+      ctx.closePath();
+      if(fill){ctx.fillStyle=fill;ctx.fill();}
+      if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}
+    }
+    // 场域参考框（z=0 水平基准面）
+    quad([[-hs,0,0],[hs,0,0],[hs,span,0],[-hs,span,0]],null,'rgba(255,255,255,.15)');
+    // 当前切面平面（高亮）
+    if(slice.m==='h'){
+      quad([[-hs,0,slice.zs],[hs,0,slice.zs],[hs,span,slice.zs],[-hs,span,slice.zs]],
+        'rgba(15,181,142,.22)','rgba(46,230,166,.95)',1.4);
+    }else{
+      quad([[slice.zs,0,-zr],[slice.zs,span,-zr],[slice.zs,span,zr],[slice.zs,0,zr]],
+        'rgba(15,181,142,.22)','rgba(46,230,166,.95)',1.4);
+    }
+    // UUT 受声面（DFAT）
+    if($('ds_type').value==='dfat'&&R3D_dfatTest){
+      const t=R3D_dfatTest;
+      quad([[t.cx-t.tw/2,t.cy,-t.th/2],[t.cx+t.tw/2,t.cy,-t.th/2],[t.cx+t.tw/2,t.cy,t.th/2],[t.cx-t.tw/2,t.cy,t.th/2]],
+        'rgba(255,210,74,.22)','#ffd24a',1.2);
+    }
+    // 阵列单元
+    units.forEach(u=>{const q=P(u.x,u.y,u.z);
+      ctx.beginPath();ctx.arc(q[0],q[1],2.2,0,2*Math.PI);
+      ctx.fillStyle='#0fb58e';ctx.fill();ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=0.6;ctx.stroke();});
+    // 坐标轴
+    function axis(x,y,z,lbl,col){
+      const o=P(-hs,0,0),q=P(x,y,z);
+      ctx.strokeStyle=col;ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(o[0],o[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+      ctx.fillStyle=col;ctx.font='9px monospace';ctx.fillText(lbl,q[0]+2,q[1]+3);
+    }
+    const al=span*0.3;
+    axis(-hs+al,0,0,'x','#e8837a');
+    axis(-hs,al,0,'y','#7fb2f2');
+    axis(-hs,0,al*0.8,'z','#ffd24a');
+    // 标签
+    ctx.fillStyle='#d5e0e8';ctx.font='10px sans-serif';
+    ctx.fillText(slice.m==='h'?('切面：水平 z='+fmt(slice.zs,1)+'m'):('切面：垂直 x='+fmt(slice.zs,1)+'m'),8,12);
+    ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='9px sans-serif';
+    ctx.fillText('绿=当前切面'+($('ds_type').value==='dfat'?' · 黄=UUT':''),8,H-6);
   }
 
   // 热力色：蓝->青->绿->黄->红
@@ -1836,14 +2370,35 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
   function bindCanvas(){
     const cv=$('dsCanvas');
     cv.onpointerdown=e=>{
-      if($('ds_type').value!=='multi')return;
+      const type=$('ds_type').value;
       const r=cv.getBoundingClientRect(),span=parseFloat($('ds_span').value);
       const px=((e.clientX-r.left)/r.width-0.5)*span, py=((e.clientY-r.top)/r.height)*span;
+      if(type!=='multi'){
+        // 点选阵列单元（MIMO 微调）：切面投影后找最近单元，命中半径按像素折算
+        if(type==='single')return;
+        const units=buildUnits(), slice=sliceMode();
+        const hitR=14/r.width*span; // ≈14px
+        let best=-1,bd=1e9;
+        units.forEach((u,i)=>{const [pu,pv]=elemUV(u,slice);
+          const dd=Math.hypot(pu-px,pv-py); if(dd<bd){bd=dd;best=i;}});
+        if(best>=0&&bd<=hitR){ dsSelElem=(dsSelElem===best)?null:best; updateTrimUI(); dsRender(); }
+        return;
+      }
       // 命中已有？
       let hit=-1;multiSrc.forEach((s,i)=>{if(Math.hypot(s.x-px,s.y-py)<span*0.03)hit=i;});
       if(hit>=0)dsDrag=hit; else {multiSrc.push({x:px,y:py});dsDrag=multiSrc.length-1;}
       dsRender();
     };
+    // 定位小视图拖拽旋转
+    const oc=$('dsOrient');
+    if(oc){ let od=false,ox=0,oy=0;
+      oc.addEventListener('pointerdown',e=>{od=true;ox=e.clientX;oy=e.clientY;try{oc.setPointerCapture(e.pointerId);}catch(err){}e.stopPropagation();});
+      oc.addEventListener('pointermove',e=>{ if(!od)return;
+        orientYaw+=(e.clientX-ox)*0.012; orientPitch+=(e.clientY-oy)*0.012;
+        orientPitch=Math.max(-1.5,Math.min(1.5,orientPitch)); ox=e.clientX;oy=e.clientY;
+        if(orientCache)drawOrient(orientCache.units,orientCache.slice,orientCache.span); });
+      oc.addEventListener('pointerup',()=>od=false);
+    }
     cv.onpointermove=e=>{
       if(dsDrag==null)return;
       const r=cv.getBoundingClientRect(),span=parseFloat($('ds_span').value);
@@ -1854,25 +2409,72 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
     // 读数
     cv.onmousemove=e=>{
       const r=cv.getBoundingClientRect(),span=parseFloat($('ds_span').value);
-      const px=((e.clientX-r.left)/r.width-0.5)*span, py=((e.clientY-r.top)/r.height)*span;
+      const pu=((e.clientX-r.left)/r.width-0.5)*span, pv=((e.clientY-r.top)/r.height)*span;
       const units=buildUnits(),k=kOf();
-      let pmax=0;for(let yy=0.2;yy<span;yy+=span/30)for(let xx=-span/2;xx<span/2;xx+=span/30){const a=fieldAt(units,k,xx,yy).amp;if(a>pmax)pmax=a;}
-      const db=20*Math.log10(fieldAt(units,k,px,py).amp/pmax+1e-9);
-      $('ds_readout').textContent=`(${fmt(px,1)}, ${fmt(py,1)}) m · ${fmt(db,1)} dB`;
+      const ref=dsAbsRef||{mode:'rel',spl1m:100,pmax:1,slice:sliceMode()};
+      const amp=fieldAtSlice(units,k,pu,pv,ref.slice).amp;
+      const axes=ref.slice.m==='h'?'(x,y)':'(z,y)';
+      if(ref.mode==='abs'){
+        const spl=ref.spl1m+20*Math.log10(amp+1e-9);
+        $('ds_readout').textContent=`${axes}=(${fmt(pu,1)}, ${fmt(pv,1)}) m · ${fmt(spl,1)} dB SPL`;
+      }else{
+        const db=20*Math.log10(amp/ref.pmax+1e-9);
+        $('ds_readout').textContent=`${axes}=(${fmt(pu,1)}, ${fmt(pv,1)}) m · ${fmt(db,1)} dB`;
+      }
     };
   }
   function buildSrcList(){
     $('ds_srcList').innerHTML=multiSrc.map((s,i)=>`#${i+1} (${fmt(s.x,1)}, ${fmt(s.y,1)})`).join(' ｜ ')||'画布上点击添加声源';
   }
 
-  /* ===== 远场方向性极坐标 ===== */
+  /* ===== 单元微调（手动 MIMO）===== */
+  function trimName(i){
+    const t=$('ds_type').value;
+    if(t==='dfat'&&/3d/.test($('ds_dfatLayout')?$('ds_dfatLayout').value:'')){
+      const N=parseInt($('ds_N').value);
+      return '行'+(Math.floor(i/N)+1)+' 列'+(i%N+1)+'（#'+(i+1)+'）';
+    }
+    return '单元 #'+(i+1);
+  }
+  window.updateTrimUI=function(){
+    const nTrim=Object.keys(elemTrim).length;
+    if($('ds_trimCount'))$('ds_trimCount').textContent=nTrim?('已微调 '+nTrim+' 个单元'):'';
+    if(!$('ds_trimSel'))return;
+    if(dsSelElem==null){
+      $('ds_trimSel').textContent='未选中单元（在声场图上点击单元）';
+      $('ds_trimG').value=0;$('ds_trimP').value=0;
+      $('ds_trimGLbl').textContent='0';$('ds_trimPLbl').textContent='0';
+      return;
+    }
+    const t=elemTrim[dsSelElem]||{g:0,p:0};
+    $('ds_trimSel').textContent='已选中：'+trimName(dsSelElem)+'  幅度 '+(t.g>=0?'+':'')+t.g+' dB / 相位 '+(t.p>=0?'+':'')+t.p+'°';
+    $('ds_trimG').value=t.g;$('ds_trimP').value=t.p;
+    $('ds_trimGLbl').textContent=(t.g>=0?'+':'')+t.g;$('ds_trimPLbl').textContent=(t.p>=0?'+':'')+t.p;
+  };
+  window.dsTrimUpd=function(){
+    if(dsSelElem==null){updateTrimUI();return;}
+    const g=parseFloat($('ds_trimG').value), p=parseFloat($('ds_trimP').value);
+    if(g===0&&p===0)delete elemTrim[dsSelElem];
+    else elemTrim[dsSelElem]={g,p};
+    updateTrimUI(); dsRender();
+  };
+  window.dsTrimReset=function(all){
+    if(all){elemTrim={};dsSelElem=null;}
+    else if(dsSelElem!=null)delete elemTrim[dsSelElem];
+    updateTrimUI(); dsRender();
+  };
+
+  /* ===== 远场方向性极坐标（在当前切面平面内扫描：h=水平方向图，v=垂直方向图）===== */
   let polarCache=null;
   function computePolar(units,k){
     const R=1000; // 远场半径
+    const slice=sliceMode();
     const arr=[];
     for(let a=-90;a<=90;a+=0.5){
       const ar=a*Math.PI/180;
-      const amp=fieldAt(units,k,R*Math.sin(ar),R*Math.cos(ar)).amp*R; // 乘R抵消1/r
+      const amp = slice.m==='h'
+        ? fieldAt(units,k,R*Math.sin(ar),R*Math.cos(ar),0).amp*R
+        : fieldAt(units,k,0,R*Math.cos(ar),R*Math.sin(ar)).amp*R; // 垂直面内扫描（仰角）
       arr.push({a,amp});
     }
     const max=Math.max(...arr.map(p=>p.amp));
@@ -1881,64 +2483,104 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
   }
   function drawPolar(units,k){
     const arr=computePolar(units,k);polarCache=arr;
-    const W=720,H=360,cx=W/2,cy=H-30,Rmax=H-70,dyn=parseFloat($('ds_dyn').value);
-    let s='';
-    // 同心圈(dB)
-    for(let dbm=0;dbm>=-dyn;dbm-=10){const rr=(1-(-dbm)/dyn)*Rmax;
-      s+=`<circle cx="${cx}" cy="${cy}" r="${rr.toFixed(1)}" fill="none" stroke="#e3ebee"/><text x="${cx+3}" y="${(cy-rr+11).toFixed(1)}" font-size="9" fill="#9bb0ba">${dbm}</text>`;}
-    // 纵轴单位说明
-    s+=`<text x="${cx+3}" y="${(cy-Rmax-4).toFixed(1)}" font-size="9.5" fill="#67808c">相对声压级 (dB)，主瓣峰值=0</text>`;
-    // 角度线
-    [-90,-60,-30,0,30,60,90].forEach(a=>{const ar=a*Math.PI/180;s+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Math.sin(ar)*Rmax).toFixed(1)}" y2="${(cy-Math.cos(ar)*Rmax).toFixed(1)}" stroke="#eef4f6"/><text x="${(cx+Math.sin(ar)*(Rmax+12)).toFixed(1)}" y="${(cy-Math.cos(ar)*(Rmax+12)).toFixed(1)}" font-size="10" fill="#9bb0ba" text-anchor="middle">${a}°</text>`;});
-    // 方向性曲线
-    let pts=arr.map(p=>{const rr=(1-Math.max(0,(-p.db)/dyn))*Rmax;const ar=p.a*Math.PI/180;return [cx+Math.sin(ar)*rr,cy-Math.cos(ar)*rr];});
-    s+=`<path d="M${pts.map(p=>p.map(x=>x.toFixed(1)).join(',')).join(' L')}" fill="var(--accent)" fill-opacity="0.12" stroke="var(--accent)" stroke-width="2"/>`;
-    $('dsPolar').innerHTML=s;
-    // 指标
-    const mainIdx=arr.reduce((bi,p,i)=>p.db>arr[bi].db?i:bi,0);
-    const main=arr[mainIdx];
-    $('ds_mainDir').textContent=fmt(main.a,0);
-    // −6dB 波束宽度：从主瓣两侧找 −6dB 交点；某侧未跌到 −6dB（波束很宽/贴 ±90°边）则以扫描边界近似并标 ≥
+    const dyn=parseFloat($('ds_dyn').value);
+    // ---- 指标先算（供主瓣/BW 高亮）----
+    const mainIdx=arr.reduce((bi,p,i)=>p.db>arr[bi].db?i:bi,0), main=arr[mainIdx];
     let hiA=null,loA=null;
     for(let i=mainIdx;i<arr.length;i++){if(arr[i].db<=-6){hiA=arr[i].a;break;}}
     for(let i=mainIdx;i>=0;i--){if(arr[i].db<=-6){loA=arr[i].a;break;}}
-    if(hiA==null||loA==null){
-      const bw=(hiA!=null?hiA:arr[arr.length-1].a)-(loA!=null?loA:arr[0].a);
-      $('ds_bw').textContent='≥'+fmt(bw,0);
-    }else $('ds_bw').textContent=fmt(hiA-loA,0);
-    // 旁瓣：先向两侧走到第一零点(局部极小)界定主瓣范围，再取主瓣外最大值——宽波束也不会把主瓣裙边误当旁瓣
+    const bwTxt=(hiA==null||loA==null)?('≥'+fmt((hiA!=null?hiA:arr[arr.length-1].a)-(loA!=null?loA:arr[0].a),0)):fmt(hiA-loA,0);
     let ri=mainIdx;while(ri<arr.length-1&&arr[ri+1].db<=arr[ri].db)ri++;
     let li=mainIdx;while(li>0&&arr[li-1].db<=arr[li].db)li--;
-    let sll=-99;
-    for(let i=0;i<arr.length;i++){if((i<li||i>ri)&&arr[i].db>sll)sll=arr[i].db;}
+    let sll=-99;for(let i=0;i<arr.length;i++){if((i<li||i>ri)&&arr[i].db>sll)sll=arr[i].db;}
+    // ---- 绘图（半圆开口朝上，0°在正上）----
+    const W=640,H=352,cx=W/2,cy=H-26,Rmax=H-58;
+    const rOf=db=>(1-Math.max(0,Math.min(dyn,-db))/dyn)*Rmax;
+    const pol=(a,r)=>[cx+Math.sin(a*Math.PI/180)*r, cy-Math.cos(a*Math.PI/180)*r];
+    const P=(a,r)=>{const q=pol(a,r);return q[0].toFixed(1)+','+q[1].toFixed(1);};
+    let s='';
+    // 半圆底
+    s+=`<path d="M${cx-Rmax},${cy} A${Rmax},${Rmax} 0 0 1 ${cx+Rmax},${cy} Z" fill="#eef3f6"/>`;
+    // −6dB 主瓣扇区高亮
+    if(loA!=null&&hiA!=null)
+      s+=`<path d="M${cx},${cy} L${P(loA,Rmax)} A${Rmax},${Rmax} 0 0 1 ${P(hiA,Rmax)} Z" fill="rgba(46,230,166,.10)"/>`;
+    // dB 环 + 每环标注
+    for(let db=0;db>=-dyn-1e-6;db-=10){const r=rOf(db);
+      s+=`<path d="M${cx-r},${cy} A${r},${r} 0 0 1 ${cx+r},${cy}" fill="none" stroke="#d6e0e6"/>`;
+      s+=`<text x="${cx+4}" y="${(cy-r+11).toFixed(1)}" font-size="9" fill="#9bb0ba">${db}</text>`;}
+    // 角度射线：每15°；标注每30°+±90
+    for(let a=-90;a<=90;a+=15){
+      s+=`<line x1="${cx}" y1="${cy}" x2="${P(a,Rmax)}" stroke="${a%30===0?'#cdd9e0':'#e9eff3'}" stroke-width="${a===0?1.3:1}"/>`;
+      if(a%30===0){const q=pol(a,Rmax+14);s+=`<text x="${q[0].toFixed(1)}" y="${q[1].toFixed(1)}" font-size="10" fill="#7d8fa0" text-anchor="middle" dominant-baseline="middle">${a}°</text>`;}}
+    // 方向性曲线
+    const pts=arr.map(p=>pol(p.a,rOf(p.db)));
+    s+=`<path d="M${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L')}" fill="var(--accent)" fill-opacity="0.14" stroke="var(--accent)" stroke-width="2"/>`;
+    // 主瓣方向高亮线 + 峰点
+    s+=`<line x1="${cx}" y1="${cy}" x2="${P(main.a,Rmax)}" stroke="#f5a623" stroke-width="1.6" stroke-dasharray="5 3"/>`;
+    s+=`<circle cx="${pol(main.a,rOf(0))[0].toFixed(1)}" cy="${pol(main.a,rOf(0))[1].toFixed(1)}" r="3.4" fill="#f5a623"/>`;
+    // 标题 + 底部说明
+    const plNm=sliceMode().m==='h'?'水平面':'垂直面';
+    s+=`<text x="8" y="15" font-size="11" fill="#4a5c68" font-weight="600">${plNm}方向图（远场，主瓣=0dB，每环−10dB）</text>`;
+    // 顶部两角利用留白：放阵列上下文（不与下方指标卡重复）
+    const fH=parseFloat($('ds_f').value), lamH=C/fH, Nu=units.length, tt=$('ds_type').value, isArr=Nu>1&&tt!=='multi';
+    let mnx=1/0,mxx=-1/0,mny=1/0,mxy=-1/0,mnz=1/0,mxz=-1/0;
+    units.forEach(u=>{mnx=Math.min(mnx,u.x);mxx=Math.max(mxx,u.x);mny=Math.min(mny,u.y);mxy=Math.max(mxy,u.y);mnz=Math.min(mnz,u.z);mxz=Math.max(mxz,u.z);});
+    const aper=Math.hypot(mxx-mnx,mxy-mny,mxz-mnz);
+    s+=`<text x="14" y="40" font-size="10.5" fill="#8a9aa8">${fH} Hz · λ ${(lamH*100).toFixed(0)} cm</text>`;
+    if(isArr)s+=`<text x="14" y="57" font-size="10.5" fill="#8a9aa8">孔径 ${aper.toFixed(2)} m · ${Nu} 单元</text>`;
+    if(isArr&&['line','phased','curve','focus'].includes(tt)){
+      const dl=parseFloat($('ds_d').value)/lamH;
+      s+=`<text x="${W-14}" y="40" font-size="10.5" fill="${dl>0.5?'#c0803a':'#8a9aa8'}" text-anchor="end">d/λ = ${dl.toFixed(2)}</text>`;
+      s+=`<text x="${W-14}" y="57" font-size="10.5" fill="#8a9aa8" text-anchor="end">${dl>1?'含栅瓣区':dl>0.5?'偏转防栅瓣临界':'无栅瓣'}</text>`;
+    }
+    s+=`<text x="${cx}" y="${(cy+15).toFixed(1)}" font-size="9.5" fill="#9bb0ba" text-anchor="middle">主瓣 ${fmt(main.a,0)}° · −6dB 波束宽 ${bwTxt}° · 旁瓣 ${sll>-90?fmt(sll,1):'—'} dB</text>`;
+    $('dsPolar').innerHTML=s;
+    // ---- 指标写入 ----
+    $('ds_mainDir').textContent=fmt(main.a,0);
+    $('ds_bw').textContent=bwTxt;
     $('ds_sll').textContent= sll>-90?fmt(sll,1):'—';
-    // 栅瓣（用区分偏转/静态的临界间距，与旁瓣电平联判）
-    const lambda=C/parseFloat($('ds_f').value),d=parseFloat($('ds_d').value);
-    const t=$('ds_type').value;
-    if(['line','phased','curve','focus'].includes(t)){
-      const dGr=gratingThreshold(t,lambda);
-      $('ds_grating').textContent= d>dGr ? (sll>-6?'有明显栅瓣':'有栅瓣') : (d>0.9*dGr?'临界':'无');
-    }else $('ds_grating').textContent='—';
+    const lambda=C/parseFloat($('ds_f').value),d=parseFloat($('ds_d').value),t=$('ds_type').value;
+    if(['line','phased','curve','focus'].includes(t)){const dGr=gratingThreshold(t,lambda);
+      $('ds_grating').textContent= d>dGr ? (sll>-6?'有明显栅瓣':'有栅瓣') : (d>0.9*dGr?'临界':'无');}
+    else $('ds_grating').textContent='—';
   }
 
   window.dsExport=function(){
     const t=$('ds_type').value;
     const typeNm={single:'单点声源',multi:'多点声源',line:'直线阵列',curve:'弧形阵列',focus:'聚焦阵列',phased:'相控阵',dfat:'DFAT 直接场阵列'}[t];
-    const inputs=[['声源类型',typeNm],['频率',$('ds_f').value+' Hz'],['波长',fmt(C/parseFloat($('ds_f').value),3)+' m']];
+    const emNm={mono:'理想点源',piston:'障板活塞源 Ø'+$('ds_pistD').value+'m',card:'心形'}[$('ds_elemModel').value];
+    const slc=sliceMode(), slcNm=(slc.m==='h'?'水平切面 z=':'垂直切面 x=')+fmt(slc.zs,1)+'m';
+    const inputs=[['声源类型',typeNm],['频率',$('ds_f').value+' Hz'],['波长',fmt(C/parseFloat($('ds_f').value),3)+' m'],
+      ['单元模型',emNm],['观察切面',slcNm],
+      ['标度',$('ds_lvlMode').value==='abs'?('绝对SPL（单元 '+$('ds_spl1m').value+' dB@1m）'):'相对峰值']];
+    const trimKeys=Object.keys(elemTrim);
+    if(trimKeys.length)inputs.push(['单元微调(MIMO)',trimKeys.map(i=>('#'+(+i+1)+': '+(elemTrim[i].g>=0?'+':'')+elemTrim[i].g+'dB/'+(elemTrim[i].p>=0?'+':'')+elemTrim[i].p+'°')).join('；')]);
     if(['line','curve','focus','phased'].includes(t)){inputs.push(['单元数',$('ds_N').value]);inputs.push(['单元间距',$('ds_d').value+' m']);}
     if(t==='phased')inputs.push(['波束偏转',$('ds_steer').value+'°']);
     if(t==='curve')inputs.push(['阵列弧度',$('ds_curve').value+'°']);
     if(t==='focus'){inputs.push(['焦点距离',$('ds_fd').value+' m']);inputs.push(['焦点偏移',$('ds_fx').value+' m']);}
     if(t==='dfat'){const lay=({flatPlane:'多点平面声源',arcPlane:'弧形平面声源',flat3d:'平面三维阵列',arc3d:'弧形三维阵列'})[$('ds_dfatLayout').value];inputs.push(['DFAT布局',lay]);inputs.push(['扬声器数',$('ds_N').value]);inputs.push(['阵列-试件距离',$('ds_ringR').value+' m']);inputs.push(['测试件尺寸',$('ds_tw').value+' × '+$('ds_th').value+' m']);}
     const results=[['主瓣方向',$('ds_mainDir').textContent,'°'],['−6dB 波束宽度',$('ds_bw').textContent,'°'],['最大旁瓣电平',$('ds_sll').textContent,'dB'],['栅瓣风险',$('ds_grating').textContent]];
-    let tableHTML='', notes='直达声场复数叠加模型（不含反射/混响），各单元为理想点源。栅瓣判据 d>λ/2。';
+    let tableHTML='', notes='直达声场三维点源相干叠加模型（不含反射/混响/互耦）：单元按真实三维坐标建模，切面场按 rᵢ=√(Δx²+Δy²+Δz²) 计算；单元指向性可选理想点源/障板活塞 2J₁(ka·sinθ)/(ka·sinθ)/心形。栅瓣临界间距按偏转角区分（静态宽边 d≥λ，偏转 d≥λ/(1+|sinθ|)）。';
     if(t==='dfat'){
       results.push(['DFAT均匀性判定',$('ds_dfatPass').textContent]);
       results.push(['声压级极差',$('ds_dfatRange').textContent,'dB']);
+      if(mimoOn&&mimoInfo){
+        results.push(['MIMO控制','已应用（Tikhonov 正则最小二乘，逐频求解）']);
+        results.push(['MIMO驱动范围',fmt(mimoInfo.driveMin,1)+' ~ '+fmt(mimoInfo.driveMax,1)+' dB · 控制点 '+mimoInfo.M]);
+      }
+      const bandHead=$('dfatBandTable').querySelector('thead').innerHTML;
       const rows=Array.from(document.querySelectorAll('#dfatBandTbody tr')).map(tr=>{
-        const tds=tr.querySelectorAll('td');return `<tr><td>${tds[0].textContent}</td><td>${tds[1].textContent}</td><td>${tds[2].textContent}</td></tr>`;
+        const tds=tr.querySelectorAll('td');return '<tr>'+Array.from(tds).map(td=>`<td>${td.textContent}</td>`).join('')+'</tr>';
       }).join('');
-      tableHTML=`<h2 class="rsec" style="font-size:13px">分倍频带均匀性（±3dB容差）</h2><table><thead><tr><th>频带</th><th>极差dB</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`;
+      // UUT 受声面热图快照 + 统计行
+      let uutImg='';
+      try{ const uc=$('dsUutMap');
+        if(uc&&uc.width>0)uutImg=`<h2 class="rsec" style="font-size:13px">UUT 受声面声压分布（正对阵列视角）</h2>
+          <div style="text-align:center;margin:8px 0"><img src="${uc.toDataURL('image/png')}" style="max-width:440px;width:100%;border:1px solid #d8e2e7;border-radius:8px"/></div>
+          <p style="font-size:11.5px;color:#67808c;margin:4px 0 0">${($('dsUutHint')?$('dsUutHint').textContent:'')}</p>`;
+      }catch(err){}
+      tableHTML=uutImg+`<h2 class="rsec" style="font-size:13px">分倍频带均匀性（±3dB容差）</h2><table><thead>${bandHead}</thead><tbody>${rows}</tbody></table>`;
       notes+=' DFAT（Direct Field Acoustic Testing）参考 NASA-HDBK-7010：用扬声器阵列环绕测试件产生直接声场替代混响室测试，典型均匀性容差为测试区域内声压级 ±3dB。实际工程通常需 MIMO 多通道控制精细调试才能达到全频带均匀，本工具为简化几何模型估算。';
     }
     exportReport({
@@ -2585,6 +3227,449 @@ function grabSVG(id){const el=$(id);return el?el.outerHTML:'';}
   insDemo(2);
   insRecalc();
 
+})();
+
+/* ============ 混响时间调整（现场指导） ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  const RB=[125,250,500,1000,2000,4000];
+  const bandTxt=b=>b>=1000?(b/1000)+'k':(''+b);
+  const RTA_ABS={
+    "50mm 玻璃棉板(贴墙)":[0.12,0.45,0.85,0.95,0.90,0.85],
+    "100mm 玻璃棉板(贴墙)":[0.30,0.80,1.00,1.00,0.95,0.90],
+    "100mm 玻璃棉+50mm空腔":[0.45,0.90,1.00,1.00,1.00,0.95],
+    "悬挂空间吸声体(双面)":[0.40,0.80,1.00,1.05,1.00,0.95],
+    "自定义(手动录入α)":[0.50,0.50,0.50,0.50,0.50,0.50]
+  };
+  const RTA_BASS={
+    "膜片共振低频陷阱":[0.60,0.45,0.22,0.12,0.08,0.06],
+    "超厚角落吸声体(≥300mm)":[0.55,0.75,0.85,0.80,0.70,0.60],
+    "亥姆霍兹(调谐125Hz)":[0.70,0.30,0.12,0.08,0.05,0.04]
+  };
+  const RTA_DIFF=[0.10,0.10,0.08,0.06,0.05,0.05];
+  const RTA_SURF={
+    "浇筑混凝土":[0.01,0.01,0.02,0.02,0.02,0.03],
+    "抹灰墙面":[0.02,0.03,0.04,0.05,0.04,0.03],
+    "瓷砖/环氧地面":[0.01,0.01,0.01,0.02,0.02,0.02],
+    "木地板/木饰面":[0.15,0.11,0.10,0.07,0.06,0.07]
+  };
+  const TYPICAL=[6.5,6.0,5.4,4.6,3.6,2.7]; // 典型裸水泥大房间 RT 示例
+  let curRoom='source', selBand=0, rtaLast=null;
+  const rooms={}; // 首次切换到某室时为空→应用该室默认，之后存/取各自数据
+  let rtaYaw=-0.62, rtaPitch=-0.42, rtaInit=false;
+
+  // 填充下拉
+  function fillSel(id,obj,sel){ $(id).innerHTML=Object.keys(obj).map(k=>`<option ${k===sel?'selected':''}>${k}</option>`).join(''); }
+
+  function buildMeasTable(){
+    let h='<thead><tr><th>频带 Hz</th>'+RB.map(b=>`<th>${bandTxt(b)}</th>`).join('')+'</tr></thead>';
+    h+='<tbody><tr><td>实测 T₆₀ (s)</td>'+RB.map((b,i)=>`<td><input type="number" step="0.1" id="rta_T_${i}" value="${TYPICAL[i]}" oninput="rtaRecalc()"></td>`).join('')+'</tr></tbody>';
+    $('rta_measTable').innerHTML=h;
+  }
+  function buildCustomInputs(){
+    $('rta_absCustomInputs').innerHTML=RB.map((b,i)=>`<div><div style="font-size:10px;color:var(--muted);text-align:center">${bandTxt(b)}</div><input type="number" step="0.01" id="rta_ca_${i}" value="0.5" oninput="rtaRecalc()" style="padding:5px 4px;text-align:center"></div>`).join('');
+  }
+  function buildBandSeg(){
+    $('rta_bandSeg').innerHTML=RB.map((b,i)=>`<button class="${i===selBand?'on':''}" data-b="${i}">${bandTxt(b)}Hz</button>`).join('');
+    $('rta_bandSeg').querySelectorAll('button').forEach(bt=>bt.onclick=()=>{selBand=+bt.dataset.b;
+      $('rta_bandSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));bt.classList.add('on');
+      $('rta_bandLbl').textContent=bandTxt(RB[selBand])+'Hz';rtaDraw3D();});
+  }
+
+  // 几何
+  function geom(){const L=+$('rta_L').value,W=+$('rta_W').value,H=+$('rta_H').value;
+    return {L,W,H,V:L*W*H,ceil:L*W,floor:L*W,wall:2*(L*H+W*H),S:2*(L*W+L*H+W*H)};}
+  function absAlpha(){const t=$('rta_absType').value;
+    if(t.indexOf('自定义')===0)return RB.map((b,i)=>{const v=parseFloat(($('rta_ca_'+i)||{}).value);return isFinite(v)?v:0;});
+    return RTA_ABS[t];}
+  function mode(){return $('rta_modeSeg').querySelector('button.on').dataset.m;}
+
+  // 现有吸声量 A_现(各频带)
+  function Acur(g){
+    if(mode()==='meas'){
+      return RB.map((b,i)=>{const T=parseFloat($('rta_T_'+i).value);return (T>0)?0.161*g.V/T:null;});
+    }else{
+      const af=RTA_SURF[$('rta_sfFloor').value],aw=RTA_SURF[$('rta_sfWall').value],ac=RTA_SURF[$('rta_sfCeil').value];
+      return RB.map((b,i)=>g.floor*af[i]+g.wall*aw[i]+g.ceil*ac[i]);
+    }
+  }
+
+  window.rtaAbsCustomUpd=function(){
+    $('rta_absCustomBox').style.display = ($('rta_absType').value.indexOf('自定义')===0)?'block':'none';
+  };
+
+  window.rtaFillTypical=function(){ RB.forEach((b,i)=>$('rta_T_'+i).value=TYPICAL[i]); rtaRecalc(); };
+
+  const BASS_CAP=3; // 一般隔声实验室不宜堆低频陷阱，自动建议上限（偏"几乎不用陷阱"）
+  window.rtaAuto=function(){
+    const g=geom(),Thi=+$('rta_Thi').value;
+    const Ac=Acur(g), aP=+$('rta_absArea').value, aBT=+$('rta_bassArea').value;
+    const aP_a=absAlpha(), aBT_a=RTA_BASS[$('rta_bassType').value];
+    const need=RB.map((b,i)=>Math.max(0, 0.161*g.V/Thi - (Ac[i]||0)));
+    const sd=(x,y)=>y>1e-6?x/y:0;
+    // 策略：以宽频吸声为主，按中高频(500Hz–4kHz)缺口定量——避免为补低频而在中高频过吸；
+    //       宽频板本身也贡献一部分低频吸收；低频陷阱仅少量补充（上限 BASS_CAP），
+    //       仍不足的低频靠标注提示（加厚/空腔/膜共振或接受更长低频混响），不堆大量陷阱。
+    let nP=0; [2,3,4,5].forEach(i=>{ nP=Math.max(nP, Math.ceil(sd(need[i], aP*aP_a[i]))); });
+    const availArea=0.85*g.ceil+0.45*g.wall; // 顶面 + 部分上墙的可铺装面积上限
+    nP=Math.max(0,Math.min(nP, Math.floor(availArea/aP), 120));
+    // 宽频板装完后的剩余缺口，低频陷阱只补 125/250 且限量
+    const rem=RB.map((b,i)=>Math.max(0, need[i]-nP*aP*aP_a[i]));
+    let nBT=0; [0,1].forEach(i=>{ nBT=Math.max(nBT, Math.ceil(sd(rem[i], aBT*aBT_a[i]))); });
+    nBT=Math.max(0,Math.min(nBT,BASS_CAP));
+    const nD=Math.max(0,Math.min(40,Math.ceil(g.V/12)));
+    $('rta_absN').value=nP; $('rta_bassN').value=nBT; $('rta_diffN').value=nD;
+    rtaRecalc();
+  };
+
+  window.rtaRecalc=function(){
+    const g=geom(),Thi=+$('rta_Thi').value,Tlo=+$('rta_Tlo').value;
+    $('rta_roomStats').textContent=`体积 V=${g.V.toFixed(1)} m³ · 顶面 ${g.ceil.toFixed(1)} · 墙面 ${g.wall.toFixed(1)} · 总表面 ${g.S.toFixed(1)} m²`;
+    const nP=+$('rta_absN').value,nBT=+$('rta_bassN').value,nD=+$('rta_diffN').value;
+    $('rta_absNLbl').textContent=nP; $('rta_bassNLbl').textContent=nBT; $('rta_diffNLbl').textContent=nD;
+    const aP=+$('rta_absArea').value, aBT=+$('rta_bassArea').value, aD=+$('rta_diffArea').value;
+    const aP_a=absAlpha(), aBT_a=RTA_BASS[$('rta_bassType').value];
+    const Ac=Acur(g);
+    // ===== 各面吸声分布模型（供 Fitzroy 非均匀修正、覆盖率、立面图共用）=====
+    const testKey=$('rta_testWall').value;
+    const areasS={ceil:g.L*g.W,floor:g.L*g.W,front:g.L*g.H,back:g.L*g.H,left:g.W*g.H,right:g.W*g.H};
+    const wallsAll=['front','back','left','right'], nonTest=wallsAll.filter(k=>k!==testKey);
+    const availTotal=areasS.ceil + nonTest.reduce((s,k)=>s+areasS[k]*0.55,0);
+    const absArea=Math.min(nP*aP, availTotal), coverFrac=availTotal>0?absArea/availTotal:0;
+    function addedAbsAt(i){ const A={ceil:0,floor:0,front:0,back:0,left:0,right:0};
+      if(availTotal>0){ A.ceil+=absArea*(areasS.ceil/availTotal)*aP_a[i];
+        nonTest.forEach(k=>A[k]+=absArea*(areasS[k]*0.55/availTotal)*aP_a[i]); }
+      const bassA=nBT*aBT*aBT_a[i]; if(nonTest.length)nonTest.forEach(k=>A[k]+=bassA/nonTest.length);
+      const diffA=nD*aD*RTA_DIFF[i], wsum=nonTest.reduce((s,k)=>s+areasS[k],0);
+      if(wsum>0)nonTest.forEach(k=>A[k]+=diffA*areasS[k]/wsum);
+      return A; }
+    function baseAlphaAt(i){ if(mode()==='meas'){ const a=(Ac[i]||0)/g.S; return {ceil:a,floor:a,front:a,back:a,left:a,right:a}; }
+      const af=RTA_SURF[$('rta_sfFloor').value][i], aw=RTA_SURF[$('rta_sfWall').value][i], ac=RTA_SURF[$('rta_sfCeil').value][i];
+      return {ceil:ac,floor:af,front:aw,back:aw,left:aw,right:aw}; }
+    function surfAlphaAt(i,withT){ const b=baseAlphaAt(i), ad=withT?addedAbsAt(i):null, o={};
+      ['ceil','floor','front','back','left','right'].forEach(s=>{o[s]=Math.min(0.98,b[s]+(ad?ad[s]/areasS[s]:0));}); return o; }
+    function fitzroyAt(al){ const S=g.S,V=g.V,Sz=2*g.L*g.W,Sy=2*g.L*g.H,Sx=2*g.W*g.H;
+      const az=(al.ceil+al.floor)/2, ay=(al.front+al.back)/2, ax=(al.left+al.right)/2;
+      if(az<=0||ay<=0||ax<=0)return null; return (0.161*V/(S*S))*(Sz/az+Sy/ay+Sx/ax); }
+    const useFitz=$('rta_fitz')&&$('rta_fitz').checked;
+    const Anew=RB.map((b,i)=> (Ac[i]||0)+nP*aP*aP_a[i]+nBT*aBT*aBT_a[i]+nD*aD*RTA_DIFF[i] );
+    let Tcur,Tnew;
+    if(useFitz){ Tcur=RB.map((b,i)=>fitzroyAt(surfAlphaAt(i,false))); Tnew=RB.map((b,i)=>fitzroyAt(surfAlphaAt(i,true))); }
+    else{ Tcur=RB.map((b,i)=>(Ac[i]>0)?0.161*g.V/Ac[i]:null); Tnew=Anew.map(A=>A>0?0.161*g.V/A:null); }
+    if($('rta_modelNote')){ if(useFitz){
+        const ts=(Anew[2]>0&&Anew[3]>0)?(0.161*g.V/Anew[2]+0.161*g.V/Anew[3])/2:null;
+        const tf=(Tnew[2]!=null&&Tnew[3]!=null)?(Tnew[2]+Tnew[3])/2:null;
+        $('rta_modelNote').innerHTML=(tf!=null&&ts!=null)?`Fitzroy 非均匀修正：中频 RT <b>${tf.toFixed(2)}s</b>（Sabine 均布假设 ${ts.toFixed(2)}s，差 ${((tf-ts)>=0?'+':'')}${(tf-ts).toFixed(2)}s）。吸声越集中在少数面，修正后越偏长——鼓励分散布置。`:'';
+      } else $('rta_modelNote').textContent='当前用 Sabine（假设吸声均匀分布）。勾选可切非均匀 Fitzroy 修正，体现"贴在哪几面"的分布差异。'; }
+    const pass=RB.map((b,i)=> Tnew[i]!=null && Tnew[i]<=Thi+1e-6 && Tnew[i]>=Tlo-1e-6);
+    const over=RB.map((b,i)=> Tnew[i]!=null && Tnew[i]<Tlo-1e-6);
+    // 指标
+    const mid=(Tnew[2]!=null&&Tnew[3]!=null)?(Tnew[2]+Tnew[3])/2:null;
+    $('rta_midRT').textContent= mid!=null?mid.toFixed(2):'—';
+    const allPass=pass.every(x=>x);
+    const anyOver=over.some(x=>x);
+    const vEl=$('rta_verdict');
+    const failHi=RB.some((b,i)=>Tnew[i]!=null && Tnew[i]>Thi+1e-6 && i>=2);
+    const failLowOnly=!failHi && RB.some((b,i)=>Tnew[i]!=null && Tnew[i]>Thi+1e-6 && i<=1);
+    if(allPass){vEl.textContent='✓ 全频带达标';vEl.style.color='var(--accent)';}
+    else if(anyOver){vEl.textContent='⚠ 有频带过吸';vEl.style.color='var(--warm)';}
+    else if(failLowOnly){vEl.textContent='◐ 中高频达标·低频略长';vEl.style.color='var(--warm)';}
+    else {vEl.textContent='✗ 仍超标';vEl.style.color='var(--red)';}
+    // 最难频带（RT 最高且未达标）
+    let worst='全部达标',worstT=-1;
+    RB.forEach((b,i)=>{ if(Tnew[i]!=null && Tnew[i]>Thi+1e-6 && Tnew[i]>worstT){worstT=Tnew[i];worst=bandTxt(b)+'Hz';} });
+    $('rta_worst').textContent=worst;
+    const totArea=nP*aP+nBT*aBT;
+    $('rta_totArea').textContent=totArea.toFixed(1);
+    // 警告
+    const w=$('rta_warn');
+    if(anyOver){const ob=RB.filter((b,i)=>over[i]).map(bandTxt).join('、');
+      w.className='warnbox show';w.style.background='#2a2410';w.style.borderColor='#5a4a1a';w.style.color='var(--warm)';
+      w.textContent=`过吸警告：${ob}Hz 频带处理后混响低于下限 ${Tlo}s，可适当减少该频段吸声（尤其别在中高频堆太多板）。`;
+    }else if(!allPass){
+      const failIdx=RB.map((b,i)=>pass[i]?-1:i).filter(i=>i>=0 && Tnew[i]>Thi+1e-6);
+      const hiFail=failIdx.filter(i=>i>=2), ub=failIdx.map(i=>bandTxt(RB[i])).join('、');
+      w.className='warnbox show';w.style.background='#2a1213';w.style.borderColor='#5a2426';w.style.color='var(--red)';
+      if(hiFail.length){
+        w.textContent=`未达标频带：${ub}Hz。中高频用宽频吸声板补足（点"自动建议"或增加宽频板数量）。`;
+      }else{
+        w.textContent=`仅低频(${ub}Hz)偏长。低频最难处理——优先改用更厚/带空腔的宽频吸声或少量膜共振结构（已按上限配 ${nBT} 个低频陷阱）；一般隔声实验室不宜堆大量角落陷阱，低频也可采用更宽的混响容差。`;
+      }
+    }else{w.className='warnbox';w.textContent='';}
+    rtaLast={g,Thi,Tlo,Tcur,Tnew,Anew,Ac,nP,nBT,nD,aP,aBT,aD,aP_a,aBT_a,pass,over,totArea,
+      coverFrac,areasS,nonTest,testKey,useFitz};
+    rtaDrawChart(); rtaBuildPlan(); rtaDraw3D(); rtaCoverage(); rtaDrawElevations();
+  };
+
+  // ===== 覆盖率读数 + 约束告警（B9）=====
+  function rtaCoverage(){
+    if(!rtaLast)return; const {coverFrac,testKey}=rtaLast;
+    const twName={front:'前墙',back:'后墙',left:'左墙',right:'右墙'}[testKey]||'试件墙';
+    const ceilPct=coverFrac*100, wallPct=coverFrac*0.55*100;
+    let s=`<div class="rcell"><div class="lbl">顶面覆盖率</div><div class="big" style="font-size:20px">${ceilPct.toFixed(0)}<span class="u">%</span></div></div>`;
+    s+=`<div class="rcell"><div class="lbl">非试件墙覆盖率(整墙)</div><div class="big" style="font-size:20px">${wallPct.toFixed(0)}<span class="u">%</span></div></div>`;
+    s+=`<div class="rcell b2"><div class="lbl">被测件窗口墙</div><div class="big" style="font-size:15px;line-height:1.5">${twName}<br><span style="font-size:11px;color:var(--muted)">硬面·不吸声</span></div></div>`;
+    $('rta_covRow').innerHTML=s;
+    const cw=$('rta_covWarn');
+    if(coverFrac>0.7){ cw.className='warnbox show';cw.style.background='#2a2410';cw.style.borderColor='#5a4a1a';cw.style.color='var(--warm)';
+      cw.textContent=`覆盖率偏高（顶面 ${ceilPct.toFixed(0)}%）：单面吸声过密不利分散扩散，建议改用更厚/带空腔吸声或悬挂吸声体以减少块数，或放宽目标混响。`; }
+    else if(coverFrac>0&&coverFrac<0.05){ cw.className='warnbox show';cw.style.background='#16242e';cw.style.borderColor='#2a4055';cw.style.color='#7eb0f0';
+      cw.textContent='吸声铺装量很少：各面零星几块即可，注意仍要分散、避免集中在单一表面（利于扩散场）。'; }
+    else { cw.className='warnbox';cw.textContent=''; }
+  }
+
+  // ===== 逐墙施工立面图（D15）=====
+  function rtaDrawElevations(){
+    if(!rtaLast)return; const {g,coverFrac,testKey,nBT,nD}=rtaLast;
+    const openW=+($('rta_openW')||{}).value||0, openH=+($('rta_openH')||{}).value||0;
+    const W=760,H=460; let s='';
+    const surfs=[
+      {key:'ceil',name:'顶面',w:g.L,h:g.W,type:'ceil'},
+      {key:'front',name:'前墙',w:g.L,h:g.H,type:'wall'},
+      {key:'back',name:'后墙',w:g.L,h:g.H,type:'wall'},
+      {key:'left',name:'左墙',w:g.W,h:g.H,type:'wall'},
+      {key:'right',name:'右墙',w:g.W,h:g.H,type:'wall'}
+    ];
+    const maxW=Math.max(...surfs.map(x=>x.w)), maxH=Math.max(...surfs.map(x=>x.h));
+    const cols=3, cellW=W/cols, cellH=H/2, pad=14, titleH=18;
+    const scale=Math.min((cellW-2*pad)/maxW,(cellH-2*pad-titleH)/maxH)*0.92;
+    surfs.forEach((sf,idx)=>{
+      const bx=(idx%cols)*cellW, by=Math.floor(idx/cols)*cellH;
+      const ww=sf.w*scale, hh=sf.h*scale, ox=bx+(cellW-ww)/2, oy=by+titleH+(cellH-titleH-hh)/2;
+      const isTest=(sf.key===testKey);
+      s+=`<text x="${bx+cellW/2}" y="${by+13}" font-size="11" fill="${isTest?'#8fbaff':'#cdd8df'}" text-anchor="middle" font-weight="600">${sf.name} ${sf.w.toFixed(1)}×${sf.h.toFixed(1)}m${isTest?'（试件墙）':''}</text>`;
+      s+=`<rect x="${ox.toFixed(1)}" y="${oy.toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" fill="#0e1620" stroke="#4a5766" stroke-width="1.2"/>`;
+      if(isTest){
+        const owp=Math.min(openW*scale,ww*0.92), ohp=Math.min(openH*scale,hh*0.92);
+        const oxo=ox+(ww-owp)/2, oyo=oy+(hh-ohp)/2;
+        s+=`<rect x="${oxo.toFixed(1)}" y="${oyo.toFixed(1)}" width="${owp.toFixed(1)}" height="${ohp.toFixed(1)}" fill="rgba(90,146,240,.22)" stroke="#5a92f0" stroke-width="1.5"/>`;
+        s+=`<text x="${(ox+ww/2).toFixed(1)}" y="${(oy+hh/2+3).toFixed(1)}" font-size="9" fill="#9fc0ff" text-anchor="middle">被测件洞口 ${openW}×${openH}m</text>`;
+      }else{
+        // 角落低频陷阱：仅墙面两竖边
+        if(nBT>0&&sf.type==='wall'){ const bw=Math.max(3,0.05*ww);
+          s+=`<rect x="${ox.toFixed(1)}" y="${oy.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" fill="rgba(245,166,35,.5)"/>`;
+          s+=`<rect x="${(ox+ww-bw).toFixed(1)}" y="${oy.toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" fill="rgba(245,166,35,.5)"/>`; }
+        // 宽频吸声板（顶面全高，墙面上部 55%）
+        const vLo=sf.type==='ceil'?0:0.45, GU=6, GV=sf.type==='ceil'?5:3, tot=GU*GV, K=Math.round(coverFrac*tot), p2=0.14;
+        for(let j=0;j<GV;j++)for(let i=0;i<GU;i++){ const t=j*GU+i;
+          if(Math.floor((t+1)*K/tot)<=Math.floor(t*K/tot))continue;
+          const u0=(i+p2)/GU,u1=(i+1-p2)/GU, va=vLo+(1-vLo)*(j+p2)/GV, vb=vLo+(1-vLo)*(j+1-p2)/GV;
+          const rx=ox+u0*ww, rw=(u1-u0)*ww, ry=oy+(1-vb)*hh, rh=(vb-va)*hh;
+          s+=`<rect x="${rx.toFixed(1)}" y="${ry.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="rgba(46,230,166,.7)" stroke="rgba(10,60,48,.6)" stroke-width="0.4"/>`;
+        }
+        // 扩散板：中低区 2 块（示意）
+        if(sf.type==='wall'&&nD>0){ for(let d=0;d<2;d++){ const uu=(d+0.5)/2, vv=0.30, dw=0.13*ww, dh=0.11*hh;
+          s+=`<rect x="${(ox+uu*ww-dw/2).toFixed(1)}" y="${(oy+(1-vv)*hh-dh/2).toFixed(1)}" width="${dw.toFixed(1)}" height="${dh.toFixed(1)}" fill="rgba(185,140,240,.72)" stroke="rgba(60,40,90,.6)" stroke-width="0.4"/>`; } }
+      }
+    });
+    $('rtaElev').innerHTML=s;
+  }
+
+  function rtaDrawChart(){
+    const {Tcur,Tnew,Thi,Tlo}=rtaLast;
+    const cv=$('rtaChart');const W=720,H=320,pad={l:44,r:14,t:16,b:40},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+    const vals=[...Tcur,...Tnew,Thi,Tlo].filter(v=>v!=null);
+    const ymax=Math.max(1.2,Math.ceil(Math.max(...vals)*1.12*10)/10);
+    const X=i=>pad.l+pw*i/(RB.length-1), Y=v=>pad.t+ph*(1-v/ymax);
+    let s='';
+    // 目标带
+    s+=`<rect x="${pad.l}" y="${Y(Thi).toFixed(1)}" width="${pw}" height="${(Y(Tlo)-Y(Thi)).toFixed(1)}" fill="rgba(63,145,52,.18)"/>`;
+    s+=`<line x1="${pad.l}" y1="${Y(Thi).toFixed(1)}" x2="${W-pad.r}" y2="${Y(Thi).toFixed(1)}" stroke="#3fb95088" stroke-dasharray="4 4"/>`;
+    s+=`<line x1="${pad.l}" y1="${Y(Tlo).toFixed(1)}" x2="${W-pad.r}" y2="${Y(Tlo).toFixed(1)}" stroke="#3fb95088" stroke-dasharray="4 4"/>`;
+    // 网格 + y 轴
+    for(let v=0;v<=ymax+1e-6;v+= (ymax>6?2:ymax>3?1:0.5)){const y=Y(v);s+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e7eef1"/><text x="${pad.l-6}" y="${(y+4).toFixed(1)}" font-size="10" fill="#9bb0ba" text-anchor="end">${v}</text>`;}
+    RB.forEach((b,i)=>s+=`<text x="${X(i).toFixed(1)}" y="${H-12}" font-size="10" fill="#9bb0ba" text-anchor="middle">${bandTxt(b)}</text>`);
+    s+=`<text x="14" y="${pad.t+ph/2}" font-size="11" fill="#67808c" text-anchor="middle" transform="rotate(-90 14 ${pad.t+ph/2})">RT60 (s)</text>`;
+    function line(arr,col){let p=[];arr.forEach((v,i)=>{if(v!=null)p.push([X(i),Y(v)]);});
+      if(p.length)s+=`<path d="M${p.map(q=>q.map(x=>x.toFixed(1)).join(',')).join(' L')}" fill="none" stroke="${col}" stroke-width="2.4"/>`;
+      p.forEach(q=>s+=`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3.2" fill="${col}"/>`);}
+    line(Tcur,'#ff6b66'); line(Tnew,'#2ee6a6');
+    cv.innerHTML=s;
+  }
+
+  function rtaBuildPlan(){
+    const {nP,nBT,nD,aP,aBT,aD}=rtaLast;
+    const twName={front:'前墙',back:'后墙',left:'左墙',right:'右墙'}[($('rta_testWall')||{value:'front'}).value]||'试件墙';
+    const rows=[];
+    if(nP>0)rows.push(['宽频吸声板',$('rta_absType').value+`（单块 ${aP} m²）`,nP+' 块',(nP*aP).toFixed(1)+' m²',`均布于顶面 + 三面非试件墙上部（各面分散、留缝，不集中）；${twName}为被测件窗口，保持硬面不做吸声`]);
+    if(nBT>0)rows.push(['低频陷阱',$('rta_bassType').value,nBT+' 个','—','房间竖直墙角（三面角声压最大处），少量即可']);
+    if(nD>0)rows.push(['扩散板',`扩散体（单块 ${aD} m²）`,nD+' 块','—',`分散布置于非试件墙面、错位非平行；避开${twName}（窗口墙）；扩散性以实测验证`]);
+    let h='<thead><tr><th>处理</th><th>材质/规格</th><th>数量</th><th>吸声面积</th><th>安装位置（依据）</th></tr></thead><tbody>';
+    if(!rows.length)h+='<tr><td colspan="5" style="color:var(--muted)">当前无需增加处理，或点"自动建议"生成方案</td></tr>';
+    else h+=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="val">${r[2]}</td><td class="val">${r[3]}</td><td style="text-align:left;white-space:normal;min-width:200px">${r[4]}</td></tr>`).join('');
+    $('rtaPlanTable').innerHTML=h+'</tbody>';
+  }
+
+  /* ===== 三维房间 ===== */
+  function rtaDraw3D(){
+    if(!rtaLast)return;
+    const cv=$('rtaCanvas');const dpr=Math.min(devicePixelRatio||1,2);
+    const w=cv.clientWidth||600,h=cv.clientHeight||430;
+    if(cv.width!==Math.floor(w*dpr)){cv.width=Math.floor(w*dpr);cv.height=Math.floor(h*dpr);}
+    const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    const {g,Tnew,Thi,Tlo,nP,nBT,nD,aP}=rtaLast;
+    const L=g.L,W=g.W,H=g.H, hx=L/2,hy=W/2,hz=H/2;
+    const scale=0.62*Math.min(w,h)/Math.max(L,W,H);
+    const cx=w/2, cyc=h/2+H*scale*0.12;
+    const cy=Math.cos(rtaYaw),sy=Math.sin(rtaYaw),cp=Math.cos(rtaPitch),sp=Math.sin(rtaPitch);
+    function proj(p){let x=p[0]*cy-p[1]*sy, y=p[0]*sy+p[1]*cy, z=p[2];
+      let y2=y*cp - z*sp, z2=y*sp + z*cp;
+      return {x:cx+x*scale, y:cyc - z2*scale, d:y2};}
+    // 状态色（选定频带）
+    const T=Tnew[selBand];
+    let statusFill='rgba(120,140,160,.10)';
+    if(T!=null){ if(T>Thi+1e-6)statusFill='rgba(248,81,73,.14)'; else if(T<Tlo-1e-6)statusFill='rgba(90,146,240,.16)'; else statusFill='rgba(63,185,80,.16)'; }
+    const prims=[];
+    function quad(pts,fill,stroke,lw){const P=pts.map(proj);const d=P.reduce((s,q)=>s+q.d,0)/P.length;prims.push({P,fill,stroke,lw:lw||1,d});}
+    // 6 面（半透明，状态染色）
+    const V=[[-hx,-hy,-hz],[hx,-hy,-hz],[hx,hy,-hz],[-hx,hy,-hz],[-hx,-hy,hz],[hx,-hy,hz],[hx,hy,hz],[-hx,hy,hz]];
+    const faces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]];
+    faces.forEach(f=>quad(f.map(i=>V[i]),statusFill,'rgba(255,255,255,.13)',1));
+    // ===== 分布式布置：均布于顶面 + 三面非试件墙，保留被测件窗口墙硬面 =====
+    const testKey=($('rta_testWall')||{value:'front'}).value;
+    const eps=0.03;
+    const wallDefs={
+      front:{name:'前墙',area:L*H,fn:(u,v)=>[-hx+L*u,-hy+eps,-hz+H*v]},
+      back :{name:'后墙',area:L*H,fn:(u,v)=>[-hx+L*u, hy-eps,-hz+H*v]},
+      left :{name:'左墙',area:W*H,fn:(u,v)=>[-hx+eps,-hy+W*u,-hz+H*v]},
+      right:{name:'右墙',area:W*H,fn:(u,v)=>[ hx-eps,-hy+W*u,-hz+H*v]}
+    };
+    const ceilFn=(u,v)=>[-hx+L*u,-hy+W*v,hz-eps];
+    const nonTest=Object.keys(wallDefs).filter(k=>k!==testKey);
+    // 覆盖比例：宽频吸声总面积 / (顶面 + 非试件墙上部可铺面积)，均摊到各面
+    const absTot=nP*aP;
+    let availTotal=g.ceil; nonTest.forEach(k=>availTotal+=wallDefs[k].area*0.55);
+    const coverFrac=availTotal>0?Math.min(0.9,absTot/availTotal):0;
+    // Bresenham 均布 + 留缝，呈分散面板状（不集中）
+    function spread(fn,GU,GV,vLo,vHi,frac,fill,stroke){
+      const total=GU*GV, K=Math.round(frac*total), pad=0.14;
+      for(let j=0;j<GV;j++)for(let i=0;i<GU;i++){
+        const idx=j*GU+i;
+        if(Math.floor((idx+1)*K/total)<=Math.floor(idx*K/total))continue;
+        const u0=(i+pad)/GU,u1=(i+1-pad)/GU;
+        const v0=vLo+(vHi-vLo)*(j+pad)/GV, v1=vLo+(vHi-vLo)*(j+1-pad)/GV;
+        quad([fn(u0,v0),fn(u1,v0),fn(u1,v1),fn(u0,v1)],fill,stroke,0.5);
+      }
+    }
+    const ABS_FILL='rgba(46,230,166,.75)', ABS_STROKE='rgba(10,60,48,.6)';
+    spread(ceilFn,6,5,0,1,coverFrac,ABS_FILL,ABS_STROKE);                               // 顶面
+    nonTest.forEach(k=>{ const gu=(wallDefs[k].area===L*H)?6:5; spread(wallDefs[k].fn,gu,3,0.45,1.0,coverFrac,ABS_FILL,ABS_STROKE); }); // 三面墙上部
+    // 低频陷阱：角落竖柱
+    const corners=[[-hx,-hy],[hx,-hy],[hx,hy],[-hx,hy]];
+    const nCol=Math.min(nBT,8);
+    for(let c=0;c<nCol;c++){ const cn=corners[c%4]; const sgnx=cn[0]>0?-1:1, sgny=cn[1]>0?-1:1;
+      const t=0.35, off=(c>=4)?0.9:0;
+      const bx=cn[0]+sgnx*(off), by=cn[1]+sgny*(off);
+      quad([[bx,by,-hz],[bx+sgnx*t,by,-hz],[bx+sgnx*t,by,hz],[bx,by,hz]],'rgba(245,166,35,.85)','rgba(90,60,10,.6)',0.5);
+      quad([[bx,by,-hz],[bx,by+sgny*t,-hz],[bx,by+sgny*t,hz],[bx,by,hz]],'rgba(230,150,25,.85)','rgba(90,60,10,.6)',0.5);
+    }
+    // 扩散板：分散到非试件墙，round-robin 错位、非平行
+    const DIF_FILL='rgba(185,140,240,.82)', DIF_STROKE='rgba(60,40,90,.6)';
+    const nDf=Math.min(nD,12);
+    for(let c=0;c<nDf;c++){ const wk=nonTest[c%nonTest.length], fn=wallDefs[wk].fn;
+      const slot=Math.floor(c/nonTest.length), perRow=3, col=slot%perRow, row=Math.floor(slot/perRow);
+      const uu=(col+0.5)/perRow, vv=0.30+row*0.24, du=0.11, dv=0.10;
+      quad([fn(uu-du,vv-dv),fn(uu+du,vv-dv),fn(uu+du,vv+dv),fn(uu-du,vv+dv)],DIF_FILL,DIF_STROKE,0.5);
+    }
+    // 被测件窗口墙：蓝框 + 按真实洞口尺寸的洞口标记（硬面，不做吸声/扩散）
+    const twFn=wallDefs[testKey].fn;
+    const twWidth=(testKey==='front'||testKey==='back')?L:W;
+    const openW=+($('rta_openW')||{}).value||0, openH=+($('rta_openH')||{}).value||0;
+    const uw=Math.min(0.94,twWidth>0?openW/twWidth:0), uh=Math.min(0.94,H>0?openH/H:0);
+    const u0=(1-uw)/2,u1=(1+uw)/2,v0=(1-uh)/2,v1=(1+uh)/2;
+    quad([twFn(0.01,0.01),twFn(0.99,0.01),twFn(0.99,0.99),twFn(0.01,0.99)],'rgba(90,146,240,.10)','rgba(90,146,240,.9)',2);
+    if(uw>0&&uh>0)quad([twFn(u0,v0),twFn(u1,v0),twFn(u1,v1),twFn(u0,v1)],'rgba(90,146,240,.22)','rgba(120,170,255,.95)',1.5);
+    // 画（远→近）
+    prims.sort((a,b)=>b.d-a.d);
+    prims.forEach(pm=>{ctx.beginPath();pm.P.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();
+      if(pm.fill){ctx.fillStyle=pm.fill;ctx.fill();} if(pm.stroke){ctx.strokeStyle=pm.stroke;ctx.lineWidth=pm.lw;ctx.stroke();}});
+    // 线框（12 边）在顶层
+    const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1.4;
+    edges.forEach(e=>{const a=proj(V[e[0]]),b=proj(V[e[1]]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();});
+    // 问题标注
+    ctx.font='11px sans-serif';ctx.textAlign='center';
+    function label(p,txt,col){const q=proj(p);ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(q.x-ctx.measureText(txt).width/2-4,q.y-9,ctx.measureText(txt).width+8,15);
+      ctx.fillStyle=col;ctx.fillText(txt,q.x,q.y+2);}
+    const need125=(rtaLast.Ac[0]||0) < 0.161*g.V/Thi;
+    if(nBT===0 && need125) label([hx*0.82,hy*0.82,hz*0.7],'角落: 低频堆积',' #ffb454');
+    if(coverFrac<0.08) label([0,0,hz+0.001],'平行硬面: 颤动回声风险','#ff8f8a');
+    label(twFn(0.5,0.9),'被测件窗口·不吸声','#8fbaff');
+    // 地面标识
+    ctx.fillStyle='rgba(255,255,255,.4)';ctx.textAlign='left';ctx.font='10px sans-serif';
+    ctx.fillText(`${L}×${W}×${H} m · V=${g.V.toFixed(0)}m³ · ${bandTxt(RB[selBand])}Hz 处理后 RT=${T!=null?T.toFixed(2):'—'}s`,10,h-10);
+  }
+
+  // 旋转交互
+  function bindCanvas(){
+    const cv=$('rtaCanvas');let drag=false,lx,ly;
+    cv.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId);});
+    cv.addEventListener('pointermove',e=>{if(!drag)return;rtaYaw+=(e.clientX-lx)*0.01;rtaPitch+=(e.clientY-ly)*0.01;
+      rtaPitch=Math.max(-1.5,Math.min(1.5,rtaPitch));lx=e.clientX;ly=e.clientY;rtaDraw3D();});
+    cv.addEventListener('pointerup',()=>drag=false);
+  }
+
+  // 房间切换（存/取）
+  const VALFIELDS=['rta_L','rta_W','rta_H','rta_Thi','rta_Tlo','rta_absArea','rta_absN','rta_bassArea','rta_bassN','rta_diffArea','rta_diffN'];
+  const SELFIELDS=['rta_absType','rta_bassType','rta_sfFloor','rta_sfWall','rta_sfCeil'];
+  function saveRoom(r){const st={};VALFIELDS.concat(SELFIELDS).forEach(id=>st[id]=$(id).value);
+    st.mode=mode();st.meas=RB.map((b,i)=>$('rta_T_'+i).value);st.custom=RB.map((b,i)=>($('rta_ca_'+i)||{}).value);rooms[r]=st;}
+  function loadRoom(r){const st=rooms[r];if(!st)return;
+    VALFIELDS.concat(SELFIELDS).forEach(id=>{if(st[id]!=null)$(id).value=st[id];});
+    RB.forEach((b,i)=>{if(st.meas)$('rta_T_'+i).value=st.meas[i]; if(st.custom&&$('rta_ca_'+i))$('rta_ca_'+i).value=st.custom[i];});
+    setMode(st.mode||'meas'); rtaAbsCustomUpd();
+  }
+  function setMode(m){$('rta_modeSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+    $('rta_measBox').style.display=m==='meas'?'block':'none';$('rta_emptyBox').style.display=m==='empty'?'block':'none';}
+
+  window.rtaExport=function(){
+    const L=rtaLast; if(!L){return;}
+    const roomNm=curRoom==='source'?'发声室':'收声室';
+    const bandRows=RB.map((b,i)=>`<tr><td>${bandTxt(b)}</td><td>${L.Tcur[i]!=null?L.Tcur[i].toFixed(2):'—'}</td><td>${L.Tnew[i]!=null?L.Tnew[i].toFixed(2):'—'}</td><td>${L.pass[i]?'✓':'✗'}</td></tr>`).join('');
+    const planRows=Array.from(document.querySelectorAll('#rtaPlanTable tbody tr')).map(tr=>{const t=tr.querySelectorAll('td');
+      return t.length>=5?`<tr><td>${t[0].textContent}</td><td>${t[1].textContent}</td><td>${t[2].textContent}</td><td>${t[4].textContent}</td></tr>`:'';}).join('');
+    exportReport({
+      title:'混响时间调整指导报告（'+roomNm+'）',
+      inputs:[['房间','发声室/收声室：'+roomNm],['尺寸',`${L.g.L}×${L.g.W}×${L.g.H} m（V=${L.g.V.toFixed(1)} m³）`],
+        ['目标混响',`${L.Tlo}–${L.Thi} s`],['当前数据来源',mode()==='meas'?'现场实测 RT':'空房间材质估算'],
+        ['宽频吸声板',$('rta_absType').value+` × ${L.nP} 块`],['低频陷阱',$('rta_bassType').value+` × ${L.nBT} 个`],
+        ['扩散板',`× ${L.nD} 块`],['吸声体总面积',L.totArea.toFixed(1)+' m²']],
+      results:[['总体判定',$('rta_verdict').textContent],['处理后中频RT',$('rta_midRT').textContent,'s'],['最难达标频带',$('rta_worst').textContent]],
+      tableHTML:`<h2 class="rsec" style="font-size:13px">各频带混响（处理前→后）</h2><table><thead><tr><th>频带Hz</th><th>处理前 s</th><th>处理后 s</th><th>达标</th></tr></thead><tbody>${bandRows}</tbody></table>`
+        +`<h2 class="rsec" style="font-size:13px">施工清单与安装位置</h2><table><thead><tr><th>处理</th><th>材质/规格</th><th>数量</th><th>安装位置</th></tr></thead><tbody>${planRows}</tbody></table>`,
+      svg:grabSVG('rtaChart'),
+      notes:'方法：A=0.161·V/T 反推现有吸声，ΔA 缺口换算处理数量（Sabine）。目标混响按 GB/T 19889 框架取值（此处 '+L.Tlo+'–'+L.Thi+' s），以适用条款/评审要求为准。扩散板吸声很小，主要改善声场扩散，扩散性须实测验证（多测点声压级空间标准差 / RT 重复性）。结果为工程估算，不替代计量资质检测。'
+    });
+  };
+
+  function initRTA(){
+    if(rtaInit)return; rtaInit=true;
+    fillSel('rta_absType',RTA_ABS,'100mm 玻璃棉+50mm空腔');
+    fillSel('rta_bassType',RTA_BASS,'超厚角落吸声体(≥300mm)');
+    fillSel('rta_sfFloor',RTA_SURF,'浇筑混凝土'); fillSel('rta_sfWall',RTA_SURF,'浇筑混凝土'); fillSel('rta_sfCeil',RTA_SURF,'浇筑混凝土');
+    buildMeasTable(); buildCustomInputs(); buildBandSeg(); bindCanvas();
+    $('rta_testWall').onchange=()=>rtaRecalc();
+    $('rta_fitz').onchange=()=>rtaRecalc();
+    $('rta_openW').oninput=()=>rtaRecalc(); $('rta_openH').oninput=()=>rtaRecalc();
+    $('rta_bandLbl').textContent=bandTxt(RB[selBand])+'Hz';
+    // 房间切换
+    $('rta_roomSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      const nr=b.dataset.r; if(nr===curRoom)return;
+      saveRoom(curRoom); curRoom=nr;
+      $('rta_roomSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      if(!rooms[nr]){ // 收声室默认略小
+        if(nr==='receive'){$('rta_L').value=4.5;$('rta_W').value=3.7;$('rta_H').value=3.1;RB.forEach((bb,i)=>$('rta_T_'+i).value=TYPICAL[i]);}
+      } else loadRoom(nr);
+      rtaRecalc();
+    });
+    // 模式切换
+    $('rta_modeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{setMode(b.dataset.m);rtaRecalc();});
+    rtaAbsCustomUpd(); rtaAuto();
+  }
+  document.querySelectorAll('#modnav button').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.mod==='rtadjust')setTimeout(()=>{initRTA();rtaDraw3D();},40);
+  }));
+  if($('mod-rtadjust')&&$('mod-rtadjust').classList.contains('active'))setTimeout(initRTA,40);
 })();
 
 </script>
